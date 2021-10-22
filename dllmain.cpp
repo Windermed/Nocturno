@@ -59,7 +59,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                     return FALSE;
                 }
                 Cores::PlayerController->Possess(Cores::PlayerPawn);
-                Cores::PlayerController->CheatManager->BugItGo(1, 1, 100000, 0, 0, 0);
+                Cores::PlayerController->CheatManager->BugItGo(1, 1, 10000, 0, 0, 0);
                 Cores::PlayerController->CheatManager->God();
                 Cores::PlayerController->CheatManager->Slomo(1);
                 printf("Pawn!\n");

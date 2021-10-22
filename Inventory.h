@@ -38,12 +38,6 @@ public:
     unsigned char UnknownData00[0x1788];
     class SDK::ABuildingPlayerPrimitivePreview* BuildPreviewMarker;
 };
-struct AFortAsCurrentBuildable
-{
-public:
-    unsigned char UnknownData00[0x1940];
-    class SDK::UClass* CurrentBuildableClass;
-};
 
 SDK::AFortQuickBars* QuickBars;
 SDK::FGuid* m_pgEditToolDef;
@@ -124,6 +118,10 @@ namespace Inventory {
                     m_mTraps[guid] = reinterpret_cast<SDK::UFortTrapItemDefinition*>(pObject);
                     m_mItems[guid] = reinterpret_cast<SDK::UFortTrapItemDefinition*>(pObject);
                 }
+                if (pObject->GetFullName().rfind("FortMeleeItemDefinition", 0) == 0)
+                {
+                    m_mItems[Util::GenerateGuidPtr()] = reinterpret_cast<SDK::UFortWeaponMeleeItemDefinition*>(pObject);
+                }
             }
         }
 
@@ -199,34 +197,29 @@ namespace Inventory {
     {
         for (auto it = m_mItems.begin(); it != m_mItems.end(); it++)
         {
-            if (Util::AreGuidsTheSame((*it->first), (*Guid)) && !static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
+            if (Util::AreGuidsTheSame((*it->first), (*Guid)))
             {
                 Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
             }
-
-            if (Util::AreGuidsTheSame((*it->first), (*m_pgWallBuild))) 
+        }
+        for (auto it = m_mTraps.begin(); it != m_mTraps.end(); it++)
+        {
+            if (Util::AreGuidsTheSame((*it->first), (*Guid)))
             {
-                ShowBuildingPreview(SDK::EFortBuildingType::Wall);
-                Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
+                if (!bTrapDone)
+                {
+                    m_pTrapC = nullptr;
+                    bTrapDone = true;
+                }
+                Cores::PlayerPawn->PickUpActor(m_pTrapC, it->second);
+                Cores::PlayerPawn->CurrentWeapon->ItemEntryGuid = (*it->first);
             }
-
-            if (Util::AreGuidsTheSame((*it->first), (*m_pgRoofBuild))) 
-            {
-                ShowBuildingPreview(SDK::EFortBuildingType::Roof);
-                Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
-            }
-
-            if (Util::AreGuidsTheSame((*it->first), (*m_pgStairBuild))) 
-            {
-                ShowBuildingPreview(SDK::EFortBuildingType::Stairs);
-                Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
-            }
-
-            if (Util::AreGuidsTheSame((*it->first), (*m_pgFloorBuild))) 
-            {
-                ShowBuildingPreview(SDK::EFortBuildingType::Floor);
-                Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
-            }
+        }
+        if (Util::AreGuidsTheSame((*Guid), (*m_pgFloorBuild)) || Util::AreGuidsTheSame((*Guid), (*m_pgWallBuild)) || Util::AreGuidsTheSame((*Guid), (*m_pgRoofBuild)) || Util::AreGuidsTheSame((*Guid), (*m_pgStairBuild)))
+        {
+            auto CheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+            CheatManager->BuildFree();
+            CheatManager->BuildWith(L"Wood");
         }
     }
 
