@@ -199,7 +199,7 @@ namespace Inventory {
     {
         for (auto it = m_mItems.begin(); it != m_mItems.end(); it++)
         {
-            if (Util::AreGuidsTheSame((*it->first), (*Guid)) && !reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
+            if (Util::AreGuidsTheSame((*it->first), (*Guid)) && !static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
                 Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
             }
