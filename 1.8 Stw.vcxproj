@@ -96,6 +96,7 @@
     <ClCompile Include="SDK\FN_PlayerPawn_Generic_functions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HuskAI.h" />
     <ClInclude Include="Inventory.h" />
     <ClInclude Include="SDK.hpp" />
     <ClInclude Include="Util.h" />

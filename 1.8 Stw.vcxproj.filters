@@ -26,6 +26,9 @@
     <ClInclude Include="Inventory.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="HuskAI.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sdk">
