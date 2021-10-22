@@ -26,17 +26,35 @@ struct OwnerInventory
     unsigned char UnknownData00[0x01D8];
     class SDK::AFortInventory* OwnerInventory;
 };
-struct AFortAsBuildPreviewMID
-{
-public:
-    unsigned char UnknownData00[0x1928];
-    class SDK::UMaterialInstanceDynamic* BuildPreviewMarkerMID;
-};
 struct AFortAsBuildPreview
 {
 public:
     unsigned char UnknownData00[0x1788];
     class SDK::ABuildingPlayerPrimitivePreview* BuildPreviewMarker;
+};
+struct AFortAsCurrentBuildable
+{
+public:
+    unsigned char UnknownData00[0x1940];
+    class SDK::UClass* CurrentBuildableClass;
+};
+struct AFortAsLastBuildable
+{
+public:
+    unsigned char UnknownData00[0x1948];
+    class SDK::UClass* PreviousBuildableClass;
+};
+struct AFortAsEditActor
+{
+public:
+    unsigned char UnknownData00[0x1A48];
+    class SDK::ABuildingSMActor* EditBuildingActor;
+};
+struct AFortAsBuildPreviewMID
+{
+public:
+    unsigned char UnknownData00[0x1928];
+    class SDK::UMaterialInstanceDynamic* BuildPreviewMarkerMID;
 };
 
 SDK::AFortQuickBars* QuickBars;
@@ -70,6 +88,21 @@ SDK::UBuildingEditModeMetadata_Wall* m_pMetadataWall;
 SDK::UBuildingEditModeMetadata_Roof* m_pMetadataRoof;
 SDK::UBuildingEditModeMetadata_Stair* m_pMetadataStair;
 SDK::UBuildingEditModeMetadata_Floor* m_pMetadataFloor;
+bool m_bHasCycledWall = false;
+bool m_bHasCycledFloor = false;
+bool m_bHasCycledStair = false;
+bool m_bHasCycledRoof = false;
+bool m_bHasCycledWallOnce = false;
+bool m_bHasCycledFloorOnce = false;
+bool m_bHasCycledStairOnce = false;
+bool m_bHasCycledRoofOnce = false;
+SDK::FString m_sPendingMaterials = TEXT("WOOD");
+int m_iCurrentBuildPiece;
+SDK::UClass* m_pLastBuildClassForWall;
+SDK::UClass* m_pLastBuildClassForFloor;
+SDK::UClass* m_pLastBuildClassForStair;
+SDK::UClass* m_pLastBuildClassForRoof;
+SDK::AFortInventory* winventory;
 
 namespace Inventory {
 	static inline void SetupInventory() 
@@ -118,7 +151,7 @@ namespace Inventory {
                     m_mTraps[guid] = reinterpret_cast<SDK::UFortTrapItemDefinition*>(pObject);
                     m_mItems[guid] = reinterpret_cast<SDK::UFortTrapItemDefinition*>(pObject);
                 }
-                if (pObject->GetFullName().rfind("FortMeleeItemDefinition", 0) == 0)
+                if (pObject->GetFullName().rfind("FortWeaponMeleeItemDefinition", 0) == 0)
                 {
                     m_mItems[Util::GenerateGuidPtr()] = reinterpret_cast<SDK::UFortWeaponMeleeItemDefinition*>(pObject);
                 }
@@ -126,7 +159,7 @@ namespace Inventory {
         }
 
         auto controller = static_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-        auto winventory = reinterpret_cast<WorldInventory*>(controller)->WorldInventory;
+        winventory = reinterpret_cast<WorldInventory*>(controller)->WorldInventory;
         if (winventory)
         {
             SDK::FFortItemList* inv = &winventory->Inventory;
@@ -191,6 +224,14 @@ namespace Inventory {
         pQuickBars->ServerActivateSlotInternal(SDK::EFortQuickBars::Primary, 0, 0, true);
     }
 
+    static inline void UpdateInventory() 
+    {
+        static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
+        static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
+        QuickBars->OnRep_PrimaryQuickBar();
+        QuickBars->OnRep_SecondaryQuickBar();
+    }
+
     static inline void ShowBuildingPreview(SDK::EFortBuildingType);
 
     static inline void ExecuteInventoryItem(SDK::FGuid* Guid) 
@@ -215,16 +256,122 @@ namespace Inventory {
                 Cores::PlayerPawn->CurrentWeapon->ItemEntryGuid = (*it->first);
             }
         }
-        if (Util::AreGuidsTheSame((*Guid), (*m_pgFloorBuild)) || Util::AreGuidsTheSame((*Guid), (*m_pgWallBuild)) || Util::AreGuidsTheSame((*Guid), (*m_pgRoofBuild)) || Util::AreGuidsTheSame((*Guid), (*m_pgStairBuild)))
+        if (Util::AreGuidsTheSame((*Guid), (*m_pgWallBuild)))
         {
-            auto CheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-            CheatManager->BuildFree();
-            CheatManager->BuildWith(L"Wood");
+            if (m_iCurrentBuildPiece != 1)
+            {
+                Cores::PlayerPawn->EquipWeaponDefinition(m_pWallBuildDef, (*Guid));
+                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForWall;
+                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = WallPreview;
+                ShowBuildingPreview(SDK::EFortBuildingType::Wall);
+
+                // building position fix
+                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                if (!m_bHasCycledWallOnce)
+                {
+                    cheatman->BuildWith(TEXT("Wood"));
+                    cheatman->BuildWith(TEXT("Stone"));
+                    cheatman->BuildWith(TEXT("Wood"));
+                    m_bHasCycledWallOnce = true;
+                }
+                if (m_bHasCycledWall != true)
+                {
+                    cheatman->BuildWith(m_sPendingMaterials);
+                    m_bHasCycledWall = true;
+                }
+                m_iCurrentBuildPiece = 1;
+                m_pLastBuildClassForWall = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
+            }
+        }
+        if (Util::AreGuidsTheSame((*Guid), (*m_pgFloorBuild)))
+        {
+            if (m_iCurrentBuildPiece != 2)
+            {
+                Cores::PlayerPawn->EquipWeaponDefinition(m_pFloorBuildDef, (*Guid));
+                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForFloor;
+                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = FloorPreview;
+                ShowBuildingPreview(SDK::EFortBuildingType::Floor);
+
+                // building position fix
+                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                if (!m_bHasCycledFloorOnce)
+                {
+                    cheatman->BuildWith(TEXT("Wood"));
+                    cheatman->BuildWith(TEXT("Stone"));
+                    cheatman->BuildWith(TEXT("Wood"));
+                    m_bHasCycledFloorOnce = true;
+                }
+                if (m_bHasCycledFloor != true)
+                {
+                    cheatman->BuildWith(m_sPendingMaterials);
+                    m_bHasCycledFloor = true;
+                }
+                m_iCurrentBuildPiece = 2;
+                m_pLastBuildClassForFloor = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
+            }
+        }
+        if (Util::AreGuidsTheSame((*Guid), (*m_pgStairBuild)))
+        {
+            if (m_iCurrentBuildPiece != 3)
+            {
+                Cores::PlayerPawn->EquipWeaponDefinition(m_pStairBuildDef, (*Guid));
+                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForStair;
+                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = StairPreview;
+                ShowBuildingPreview(SDK::EFortBuildingType::Stairs);
+
+                // building position fix
+                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                if (!m_bHasCycledStairOnce)
+                {
+                    cheatman->BuildWith(TEXT("Wood"));
+                    cheatman->BuildWith(TEXT("Stone"));
+                    cheatman->BuildWith(TEXT("Wood"));
+                    m_bHasCycledStairOnce = true;
+                }
+                if (m_bHasCycledStair != true)
+                {
+                    cheatman->BuildWith(m_sPendingMaterials);
+                    m_bHasCycledStair = true;
+                }
+                m_iCurrentBuildPiece = 3;
+                m_pLastBuildClassForStair = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
+            }
+        }
+        if (Util::AreGuidsTheSame((*Guid), (*m_pgRoofBuild)))
+        {
+            if (m_iCurrentBuildPiece != 4)
+            {
+                Cores::PlayerPawn->EquipWeaponDefinition(m_pRoofBuildDef, (*Guid));
+                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForRoof;
+                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = RoofPreview;
+                ShowBuildingPreview(SDK::EFortBuildingType::Roof);
+
+                // building position fix
+                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                if (!m_bHasCycledRoofOnce)
+                {
+                    cheatman->BuildWith(TEXT("Wood"));
+                    cheatman->BuildWith(TEXT("Stone"));
+                    cheatman->BuildWith(TEXT("Wood"));
+                    m_bHasCycledRoofOnce = true;
+                }
+                if (m_bHasCycledRoof != true)
+                {
+                    cheatman->BuildWith(m_sPendingMaterials);
+                    m_bHasCycledRoof = true;
+                }
+                m_iCurrentBuildPiece = 4;
+                m_pLastBuildClassForRoof = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
+            }
         }
     }
 
     static inline void CreateBuildPreviews() 
     {
+        m_pLastBuildClassForWall = SDK::APBWA_W1_Solid_C::StaticClass();
+        m_pLastBuildClassForFloor = SDK::APBWA_W1_Floor_C::StaticClass();
+        m_pLastBuildClassForStair = SDK::APBWA_W1_StairW_C::StaticClass();
+        m_pLastBuildClassForRoof = SDK::APBWA_W1_RoofC_C::StaticClass();
         SDK::AFortPlayerController* playerController = static_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
         playerController->CheatManager->Summon(TEXT("BuildingPlayerPrimitivePreview"));
         RoofPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::FindActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass()));
