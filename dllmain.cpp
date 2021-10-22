@@ -124,8 +124,8 @@ DWORD WINAPI MainThread(LPVOID)
 {
     Util::InitConsole();
 
-    printf("Welcome To 1.8 STW!\n");
-    printf("Created by Jacobb626!\n");
+    printf("Welcome to FNStw!\n");
+    printf("Created by Jacobb626 and Windermed!\n");
 
     MH_Initialize();
 
