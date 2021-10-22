@@ -112,6 +112,10 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Inventory::SetupQuickbars();
             Inventory::UpdateInventory();
 
+            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+            auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+            FortCheatManager->CraftFree(); //Lets you craft anything
+
             auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
             MH_EnableHook((LPVOID)(GCADDR));
