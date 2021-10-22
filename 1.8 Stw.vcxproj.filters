@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="SDK\FN_Basic.cpp">
+      <Filter>sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\FN_CoreUObject_functions.cpp">
+      <Filter>sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\FN_Engine_functions.cpp">
+      <Filter>sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\FN_FortniteGame_functions.cpp">
+      <Filter>sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\FN_PlayerPawn_Generic_functions.cpp">
+      <Filter>sdk</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Util.h" />
+    <ClInclude Include="SDK.hpp">
+      <Filter>sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="Inventory.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sdk">
+      <UniqueIdentifier>{ffe97fc7-c9a4-4b23-aa43-9dd1b39b91f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{d4847c82-93de-4a42-a70d-3cbed2a545de}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
