@@ -115,6 +115,12 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
             FortCheatManager->CraftFree(); //Lets you craft anything
+            FortCheatManager->BackpackSetSize(69420); //Funny
+            FortCheatManager->GiveCheatInventory();
+            FortCheatManager->EvolveHero();
+            FortCheatManager->GiveAllWeapons();
+            FortCheatManager->GiveResources(999);
+            FortCheatManager->GiveUsefulThings(999);
 
             auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
