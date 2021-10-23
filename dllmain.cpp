@@ -3,6 +3,8 @@
 #include "minhook/MinHook.h"
 #include "Inventory.h"
 #include "HuskAI.h"
+#include <ostream>
+#include <iostream>
 
 #pragma comment(lib, "minhook/minhook.lib")
 
@@ -40,7 +42,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos) 
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_Suburban_a");
+            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_FarmsteadFort");
             bIsReady = true;
         }
 
@@ -78,6 +80,8 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 auto FortPlayerController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
                 auto FortGameMode = reinterpret_cast<SDK::AFortGameMode*>((*Cores::World)->AuthorityGameMode);
                 auto FortPlayerState = reinterpret_cast<SDK::AFortPlayerState*>(Cores::PlayerController->PlayerState);
+                FortPlayerState->bIsGameSessionOwner = true;
+                FortPlayerState->OnRep_SessionOwner();
                 FortPlayerState->OnRep_CharacterParts();
                 Cores::PlayerPawn->OnCharacterPartsReinitialized();
 
@@ -170,6 +174,10 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
             MH_EnableHook((LPVOID)(GCADDR));
+        }
+
+        if (!function->GetName().find("Tick")) 
+        {
         }
     }
 
