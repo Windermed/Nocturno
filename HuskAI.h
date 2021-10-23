@@ -15,6 +15,6 @@ namespace HuskAI {
 		NewController->Possess(NewPawn);
 		NewController->SetGoalActor(Cores::PlayerPawn, true);
 		NewPawn->SetShouldStartSleeping(false);
-		NewPawn->AIType = SDK::EFortressAIType::FAT_DebugOnly;
+		//NewPawn->AIType = SDK::EFortressAIType::FAT_DebugOnly;
 	}
 }

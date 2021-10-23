@@ -189,7 +189,7 @@ DWORD WINAPI MainThread(LPVOID)
     printf(idk);
     
     printf("\nCreated by Jacobb626 and Windermed!\n");
-    printf("Go to the Map and select any mission to load in, have fun!");
+    printf("Go to the Map and select any mission to load in, have fun!\n");
 
     MH_Initialize();
 
