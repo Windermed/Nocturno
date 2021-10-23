@@ -36,7 +36,6 @@ bool bIsInGame = false;
 PVOID(*ProcessEvent)(SDK::UObject*, SDK::UFunction*, PVOID) = nullptr;
 PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID params) 
 {
-    // sets up the mission 
     if (object && function) {
         if (function->GetName().find("StartButton") != std::string::npos) 
         {
@@ -51,7 +50,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Util::InitSdk();
             Util::InitCores();
             Util::InitPatches();
-
 
             printf("ReadyToStartMatch!\n");
 
@@ -101,7 +99,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        // function that adds weapons to the inventory
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
@@ -110,7 +107,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
         if (function->GetName().find("ServerAddItemInternal") != std::string::npos)
         {
-            // sets up quick bars
             auto params1 = reinterpret_cast<SDK::AFortQuickBars_ServerAddItemInternal_Params*>(params);
             int slot = params1->Slot;
             SDK::EFortQuickBars quickbar = params1->InQuickBar;
@@ -137,9 +133,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        // allows for the player to jump
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
         {
+            //Jumping
             if (GetAsyncKeyState(VK_SPACE) && 0x01) {
                 if (Cores::PlayerPawn->CanJump() && !Cores::PlayerPawn->IsJumpProvidingForce()) {
                     Cores::PlayerPawn->Jump();
@@ -154,7 +150,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Cores::PlayerPawn->CurrentMovementStyle = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint ? SDK::EFortMovementStyle::Walking : SDK::EFortMovementStyle::Sprinting;
         }
 
-        // allows for the loading screen to drop and executes the inventory and quickbar functions
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
         {
             Inventory::CreateBuildPreviews();
@@ -185,7 +180,6 @@ DWORD WINAPI MainThread(LPVOID)
 {
     Util::InitConsole();
 
-    // message that displays when the dll gets injected
     auto idk = R"(    _   __           __                       
    / | / /___  _____/ /___  ___________  ____ 
   /  |/ / __ \/ ___/ __/ / / / ___/ __ \/ __ \
@@ -195,7 +189,7 @@ DWORD WINAPI MainThread(LPVOID)
     printf(idk);
     
     printf("\nCreated by Jacobb626 and Windermed!\n");
-    printf("\n Go to the Map and select any mission to load in, have fun!")
+    printf("\n Go to the Map and select any mission to load in, have fun!");
 
     MH_Initialize();
 
@@ -206,7 +200,6 @@ DWORD WINAPI MainThread(LPVOID)
 
     auto ProcessEventAddress = Util::FindPattern("\x40\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x6C\x24\x00\x48\x89\x9D\x00\x00\x00\x00\x48\x8B\x05\x00\x00\x00\x00\x48\x33\xC5\x48\x89\x85\x00\x00\x00\x00\x48\x63\x41\x0C", "xxxxxxxxxxxxxxx????xxxx?xxx????xxx????xxxxxx????xxxx");
     if (!ProcessEventAddress) {
-        // in case the pattern cannot be found, this shows up
         MessageBox(NULL, static_cast<LPCWSTR>(L"Finding pattern for ProcessEvent has failed, please re-open Fortnite and try again!"), static_cast<LPCWSTR>(L"Error"), MB_ICONERROR);
         ExitProcess(EXIT_FAILURE);
     }
