@@ -2,6 +2,7 @@
 #include "Util.h"
 #include "minhook/MinHook.h"
 #include "Inventory.h"
+#include "HuskAI.h"
 
 #pragma comment(lib, "minhook/minhook.lib")
 
@@ -130,6 +131,10 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 }
             }
 
+            if (GetAsyncKeyState(VK_F1) && 0x01) {
+                HuskAI::SpawnHusk();
+            }
+
             Cores::PlayerPawn->CurrentMovementStyle = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint ? SDK::EFortMovementStyle::Walking : SDK::EFortMovementStyle::Sprinting;
         }
 
@@ -171,7 +176,7 @@ DWORD WINAPI MainThread(LPVOID)
                                              )";
     printf(idk);
     
-    printf("Created by Jacobb626 and Windermed!\n");
+    printf("\nCreated by Jacobb626 and Windermed!\n");
 
     MH_Initialize();
 
