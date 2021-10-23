@@ -1,4 +1,4 @@
-#include <Windows.h>
+﻿#include <Windows.h>
 #include "Util.h"
 #include "minhook/MinHook.h"
 #include "Inventory.h"
@@ -135,7 +135,14 @@ DWORD WINAPI MainThread(LPVOID)
 {
     Util::InitConsole();
 
-    printf("Welcome to Nocturno!\n");
+    auto idk = R"(    _   __           __                       
+   / | / /___  _____/ /___  ___________  ____ 
+  /  |/ / __ \/ ___/ __/ / / / ___/ __ \/ __ \
+ / /|  / /_/ / /__/ /_/ /_/ / /  / / / / /_/ /
+/_/ |_/\____/\___/\__/\__,_/_/  /_/ /_/\____/ 
+                                             )";
+    printf(idk);
+    
     printf("Created by Jacobb626 and Windermed!\n");
 
     MH_Initialize();

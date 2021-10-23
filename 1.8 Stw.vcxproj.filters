@@ -35,6 +35,12 @@
     <ClInclude Include="HuskAI.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Curl.hpp">
+      <Filter>Curl</Filter>
+    </ClInclude>
+    <ClInclude Include="CurlDefs.hpp">
+      <Filter>Curl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sdk">
@@ -42,6 +48,9 @@
     </Filter>
     <Filter Include="Game">
       <UniqueIdentifier>{d4847c82-93de-4a42-a70d-3cbed2a545de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Curl">
+      <UniqueIdentifier>{1ef0f08f-d055-4b38-9fcf-fd9ebada6721}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

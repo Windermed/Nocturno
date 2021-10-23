@@ -98,6 +98,8 @@
     <ClCompile Include="SDK\FN_UMG_functions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Curl.hpp" />
+    <ClInclude Include="CurlDefs.hpp" />
     <ClInclude Include="HuskAI.h" />
     <ClInclude Include="Inventory.h" />
     <ClInclude Include="SDK.hpp" />
