@@ -167,7 +167,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortCheatManager->CraftFree(); //Lets you craft anything but it doesn't work as of right now
             FortCheatManager->BackpackSetSize(69420); //funny number go brr
             FortCheatManager->GiveCheatInventory(); // gives the player all of the items in-game
-            FortCheatManager->EvolveHero();
+            FortCheatManager->EvolveHero(); //Evolves the hero i hope
             FortCheatManager->GiveAllWeapons(); // gives all of the weapons
             FortCheatManager->GiveResources(999); // gives the player maximum mats
             FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
