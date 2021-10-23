@@ -5,6 +5,7 @@
 #include "Util.h"
 #include <iostream>
 
+// code for the quickbars and inventory
 struct AFortAsQuickBars
 {
 public:
@@ -57,6 +58,7 @@ public:
     class SDK::UMaterialInstanceDynamic* BuildPreviewMarkerMID;
 };
 
+// SDK variables for building 
 SDK::AFortQuickBars* QuickBars;
 SDK::FGuid* m_pgEditToolDef;
 SDK::FGuid* m_pgPickaxe;

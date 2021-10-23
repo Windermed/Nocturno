@@ -4,6 +4,7 @@
 #include <map>
 #include "Util.h"
 
+// WIP husk code, it hasn't been completed but i hope it can work.
 namespace HuskAI {
 	static inline void SpawnHusk() 
 	{

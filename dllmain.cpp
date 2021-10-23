@@ -17,6 +17,7 @@ T* FindOffSet(const std::string& sClassName, const std::string& sQuery)
 {
     for (int i = 0; i < SDK::UObject::GetGlobalObjects().Num(); ++i)
     {
+        // sets the head
         auto pObject = SDK::UObject::GetGlobalObjects().GetByIndex(i);
         if (pObject != nullptr && pObject->GetFullName().find("F_Med_Head1") == std::string::npos)
         {
@@ -35,44 +36,54 @@ bool bIsInGame = false;
 PVOID(*ProcessEvent)(SDK::UObject*, SDK::UFunction*, PVOID) = nullptr;
 PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID params) 
 {
+    // sets up the mission 
     if (object && function) {
         if (function->GetName().find("StartButton") != std::string::npos) 
         {
+            // this is the map that it loads to
             Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_Suburban_a");
             bIsReady = true;
         }
 
+        // game is set to ReadyToStartMatch
         if (function->GetName().find("ReadyToStartMatch") != std::string::npos && bIsReady) 
         {
             Util::InitSdk();
             Util::InitCores();
             Util::InitPatches();
 
+
             printf("ReadyToStartMatch!\n");
 
             if (!bHasSpawned) {
+                // sets the game to summon the playerpawn
                 Cores::PlayerController->CheatManager->Slomo(0);
                 Cores::PlayerController->CheatManager->Summon(L"PlayerPawn_Generic_C");
                 Cores::PlayerPawn = reinterpret_cast<SDK::APlayerPawn_Generic_C*>(Util::FindActor(SDK::APlayerPawn_Generic_C::StaticClass()));
                 if (!Cores::PlayerPawn)
                 {
+                    // prints if the playerpawn cannot be summoned for some unknown reason
                     printf("PlayerPawn not found!\n");
                     return FALSE;
                 }
+                // allows for the game to possess the pawn and sets the player pawn's location and state
                 Cores::PlayerController->Possess(Cores::PlayerPawn);
                 Cores::PlayerController->CheatManager->BugItGo(1, 1, 10000, 0, 0, 0);
                 Cores::PlayerController->CheatManager->God();
                 Cores::PlayerController->CheatManager->Slomo(1);
                 printf("Pawn!\n");
+                // sets the game state for the game, which is zone
                 Cores::PlayerController->CheatManager->Summon(TEXT("FortGameStateZone"));
                 printf("State!\n");
 
+                // variables for the stw gamestate
                 auto FortPlayerController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
                 auto FortGameMode = reinterpret_cast<SDK::AFortGameMode*>((*Cores::World)->AuthorityGameMode);
                 auto FortPlayerState = reinterpret_cast<SDK::AFortPlayerState*>(Cores::PlayerController->PlayerState);
                 FortPlayerState->OnRep_CharacterParts();
                 Cores::PlayerPawn->OnCharacterPartsReinitialized();
 
+                // sets the pickaxe for the player pawn
                 auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T05.WID_Harvest_Pickaxe_SR_T05");
                 m_pPickaxeDef = pickaxeDef;
 
@@ -81,6 +92,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 FortGameMode->StartPlay();
                 printf("StartPlay!\n");
 
+                // shows when the mission has started
                 printf("Started mission!\n");
 
                 bHasSpawned = true;
@@ -89,6 +101,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
+        // function that adds weapons to the inventory
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
@@ -97,6 +110,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
         if (function->GetName().find("ServerAddItemInternal") != std::string::npos)
         {
+            // sets up quick bars
             auto params1 = reinterpret_cast<SDK::AFortQuickBars_ServerAddItemInternal_Params*>(params);
             int slot = params1->Slot;
             SDK::EFortQuickBars quickbar = params1->InQuickBar;
@@ -123,6 +137,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
+        // allows for the player to jump
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
         {
             if (GetAsyncKeyState(VK_SPACE) && 0x01) {
@@ -131,6 +146,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 }
             }
 
+            // WIP HuskAI code
             if (GetAsyncKeyState(VK_F1) && 0x01) {
                 HuskAI::SpawnHusk();
             }
@@ -138,6 +154,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Cores::PlayerPawn->CurrentMovementStyle = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint ? SDK::EFortMovementStyle::Walking : SDK::EFortMovementStyle::Sprinting;
         }
 
+        // allows for the loading screen to drop and executes the inventory and quickbar functions
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
         {
             Inventory::CreateBuildPreviews();
@@ -147,13 +164,13 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-            FortCheatManager->CraftFree(); //Lets you craft anything
-            FortCheatManager->BackpackSetSize(69420); //Funny
-            FortCheatManager->GiveCheatInventory();
+            FortCheatManager->CraftFree(); //Lets you craft anything but it doesn't work as of right now
+            FortCheatManager->BackpackSetSize(69420); //funny number go brr
+            FortCheatManager->GiveCheatInventory(); // gives the player all of the items in-game
             FortCheatManager->EvolveHero();
-            FortCheatManager->GiveAllWeapons();
-            FortCheatManager->GiveResources(999);
-            FortCheatManager->GiveUsefulThings(999);
+            FortCheatManager->GiveAllWeapons(); // gives all of the weapons
+            FortCheatManager->GiveResources(999); // gives the player maximum mats
+            FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
 
             auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
@@ -168,6 +185,7 @@ DWORD WINAPI MainThread(LPVOID)
 {
     Util::InitConsole();
 
+    // message that displays when the dll gets injected
     auto idk = R"(    _   __           __                       
    / | / /___  _____/ /___  ___________  ____ 
   /  |/ / __ \/ ___/ __/ / / / ___/ __ \/ __ \
@@ -177,6 +195,7 @@ DWORD WINAPI MainThread(LPVOID)
     printf(idk);
     
     printf("\nCreated by Jacobb626 and Windermed!\n");
+    printf("\n Go to the Map and select any mission to load in, have fun!")
 
     MH_Initialize();
 
@@ -187,6 +206,7 @@ DWORD WINAPI MainThread(LPVOID)
 
     auto ProcessEventAddress = Util::FindPattern("\x40\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x6C\x24\x00\x48\x89\x9D\x00\x00\x00\x00\x48\x8B\x05\x00\x00\x00\x00\x48\x33\xC5\x48\x89\x85\x00\x00\x00\x00\x48\x63\x41\x0C", "xxxxxxxxxxxxxxx????xxxx?xxx????xxx????xxxxxx????xxxx");
     if (!ProcessEventAddress) {
+        // in case the pattern cannot be found, this shows up
         MessageBox(NULL, static_cast<LPCWSTR>(L"Finding pattern for ProcessEvent has failed, please re-open Fortnite and try again!"), static_cast<LPCWSTR>(L"Error"), MB_ICONERROR);
         ExitProcess(EXIT_FAILURE);
     }
@@ -197,6 +217,7 @@ DWORD WINAPI MainThread(LPVOID)
     return TRUE;
 }
 
+// basic dll injection shit lol
 BOOL APIENTRY DllMain(HMODULE mod, DWORD reason, LPVOID res)
 {
     if (reason == DLL_PROCESS_ATTACH) 
