@@ -94,6 +94,34 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Inventory::ExecuteInventoryItem(guid);
         }
 
+        if (function->GetName().find("ServerAddItemInternal") != std::string::npos)
+        {
+            auto params1 = reinterpret_cast<SDK::AFortQuickBars_ServerAddItemInternal_Params*>(params);
+            int slot = params1->Slot;
+            SDK::EFortQuickBars quickbar = params1->InQuickBar;
+            SDK::FGuid guid = params1->Item;
+            if (slot != -1 && quickbar == SDK::EFortQuickBars::Secondary)
+            {
+                for (auto it = m_mItems.begin(); it != m_mItems.end(); it++)
+                {
+                    if (Util::AreGuidsTheSame((*it->first), guid))
+                    {
+                        SDK::FLinearColor color{ 100,100,100,100 };
+                        auto m_pHud = SDK::UObject::FindObject<SDK::UAthenaHUD_C>("AthenaHUD_C Transient.FortEngine_1.FortGameInstance_1.AthenaHUD_C_1");
+                        if (m_pHud != nullptr)
+                        {
+                            SDK::FSlateBrush brush = it->second->GetSmallPreviewImageBrush();
+                            if (&brush)
+                            {
+                                m_pHud->QuickbarSecondary->QuickbarSlots[params1->Slot]->Empty->SetBrush(brush);
+                                m_pHud->QuickbarSecondary->QuickbarSlots[params1->Slot]->Empty->SetColorAndOpacity(color);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
         {
             if (GetAsyncKeyState(VK_SPACE) && 0x01) {
