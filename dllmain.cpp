@@ -38,7 +38,7 @@ PVOID(*ProcessEvent)(SDK::UObject*, SDK::UFunction*, PVOID) = nullptr;
 PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID params) 
 {
     if (object && function) {
-        if (function->GetName().find("StartButton") != std::string::npos) 
+        if (function->GetName().find("StartButton") != std::string::npos)
         {
             // this is the map that it loads to
             Cores::PlayerController->SwitchLevel(L"Zone_Outpost_Stonewood");
@@ -46,7 +46,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         }
 
         // game is set to ReadyToStartMatch
-        if (function->GetName().find("ReadyToStartMatch") != std::string::npos && bIsReady) 
+        if (function->GetName().find("ReadyToStartMatch") != std::string::npos && bIsReady)
         {
             Util::InitSdk();
             Util::InitCores();
@@ -102,7 +102,15 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-
+        if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
+        {
+            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+            auto CurrentBuildClass = FortController->CurrentBuildableClass;
+            auto LastBuildPreviewLocation = FortController->LastBuildPreviewGridSnapLoc;
+            auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
+            auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
+            BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
+        }
 
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
