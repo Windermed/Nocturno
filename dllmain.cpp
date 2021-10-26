@@ -19,7 +19,6 @@ T* FindOffSet(const std::string& sClassName, const std::string& sQuery)
 {
     for (int i = 0; i < SDK::UObject::GetGlobalObjects().Num(); ++i)
     {
-        // sets the head
         auto pObject = SDK::UObject::GetGlobalObjects().GetByIndex(i);
         if (pObject != nullptr && pObject->GetFullName().find("F_Med_Head1") == std::string::npos)
         {
@@ -42,7 +41,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos) 
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_FarmsteadFort");
+            Cores::PlayerController->SwitchLevel(L"Zone_Outpost_Stonewood");
             bIsReady = true;
         }
 
@@ -51,7 +50,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         {
             Util::InitSdk();
             Util::InitCores();
-            Util::InitPatches();
+            //Util::InitPatches();
 
             printf("ReadyToStartMatch!\n");
 
@@ -87,7 +86,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
                 // sets the pickaxe for the player pawn
                 auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T05.WID_Harvest_Pickaxe_SR_T05");
-                m_pPickaxeDef = pickaxeDef;
+                PickaxeDef = pickaxeDef;
 
                 FortGameMode->StartMatch();
                 printf("StartMatch!\n");
@@ -103,36 +102,42 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
+
+
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
             Inventory::ExecuteInventoryItem(guid);
         }
 
-        if (function->GetName().find("ServerAddItemInternal") != std::string::npos)
+        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
         {
-            auto params1 = reinterpret_cast<SDK::AFortQuickBars_ServerAddItemInternal_Params*>(params);
-            int slot = params1->Slot;
-            SDK::EFortQuickBars quickbar = params1->InQuickBar;
-            SDK::FGuid guid = params1->Item;
-            if (slot != -1 && quickbar == SDK::EFortQuickBars::Secondary)
+            struct Params_
             {
-                for (auto it = m_mItems.begin(); it != m_mItems.end(); it++)
+                SDK::FGuid ItemGuid;
+                int Count;
+            };
+
+            auto Params = (Params_*)(params);
+            auto ItemInstances = FortInventory->Inventory.ItemInstances;
+            auto QuickbarSlots = QuickBars->PrimaryQuickBar.Slots;
+
+            for (int i = 0; i < ItemInstances.Num(); i++)
+            {
+                auto ItemInstance = ItemInstances.operator[](i);
+
+                if (Util::AreGuidsTheSame(Params->ItemGuid, ItemInstance->GetItemGuid()))
                 {
-                    if (Util::AreGuidsTheSame((*it->first), guid))
-                    {
-                        SDK::FLinearColor color{ 100,100,100,100 };
-                        auto m_pHud = SDK::UObject::FindObject<SDK::UAthenaHUD_C>("AthenaHUD_C Transient.FortEngine_1.FortGameInstance_1.AthenaHUD_C_1");
-                        if (m_pHud != nullptr)
-                        {
-                            SDK::FSlateBrush brush = it->second->GetSmallPreviewImageBrush();
-                            if (&brush)
-                            {
-                                m_pHud->QuickbarSecondary->QuickbarSlots[params1->Slot]->Empty->SetBrush(brush);
-                                m_pHud->QuickbarSecondary->QuickbarSlots[params1->Slot]->Empty->SetColorAndOpacity(color);
-                            }
-                        }
-                    }
+                    Inventory::DropPickupAtLocation(ItemInstance->GetItemDefinitionBP(), Params->Count);
+                }
+            }
+
+            for (int i = 0; i < QuickbarSlots.Num(); i++) 
+            {
+                if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid)) 
+                {
+                    QuickBars->EmptySlot(SDK::EFortQuickBars::Primary, i);
+                    Inventory::UpdateInventory();
                 }
             }
         }
@@ -156,9 +161,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
         {
-            Inventory::CreateBuildPreviews();
-            Inventory::SetupInventory();
+            //Inventory::CreateBuildPreviews();
             Inventory::SetupQuickbars();
+            Inventory::SetupInventory();
             Inventory::UpdateInventory();
 
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
@@ -203,7 +208,7 @@ DWORD WINAPI MainThread(LPVOID)
 
     Util::InitSdk();
     Util::InitCores();
-    Util::InitPatches();
+    //Util::InitPatches();
     Util::InitGameplaystatics();
 
     auto ProcessEventAddress = Util::FindPattern("\x40\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x6C\x24\x00\x48\x89\x9D\x00\x00\x00\x00\x48\x8B\x05\x00\x00\x00\x00\x48\x33\xC5\x48\x89\x85\x00\x00\x00\x00\x48\x63\x41\x0C", "xxxxxxxxxxxxxxx????xxxx?xxx????xxx????xxxxxx????xxxx");

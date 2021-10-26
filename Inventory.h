@@ -62,12 +62,12 @@ public:
 SDK::AFortQuickBars* QuickBars;
 SDK::FGuid* m_pgEditToolDef;
 SDK::FGuid* m_pgPickaxe;
-SDK::FGuid* m_pgWallBuild;
-SDK::FGuid* m_pgFloorBuild;
-SDK::FGuid* m_pgStairBuild;
-SDK::FGuid* m_pgRoofBuild;
+SDK::FGuid WallGuid;
+SDK::FGuid FloorGuid;
+SDK::FGuid StairGuid;
+SDK::FGuid RoofGuid;
 SDK::UFortEditToolItemDefinition* m_pEditToolDef;
-SDK::UFortWeaponMeleeItemDefinition* m_pPickaxeDef;
+SDK::UFortWeaponMeleeItemDefinition* PickaxeDef;
 SDK::UFortBuildingItemDefinition* m_pWallBuildDef;
 SDK::UFortBuildingItemDefinition* m_pFloorBuildDef;
 SDK::UFortBuildingItemDefinition* m_pStairBuildDef;
@@ -98,17 +98,17 @@ bool m_bHasCycledWallOnce = false;
 bool m_bHasCycledFloorOnce = false;
 bool m_bHasCycledStairOnce = false;
 bool m_bHasCycledRoofOnce = false;
-SDK::FString m_sPendingMaterials = TEXT("WOOD");
+SDK::FString CurrentBuildingMat = TEXT("WOOD");
 int m_iCurrentBuildPiece;
 SDK::UClass* m_pLastBuildClassForWall;
 SDK::UClass* m_pLastBuildClassForFloor;
 SDK::UClass* m_pLastBuildClassForStair;
 SDK::UClass* m_pLastBuildClassForRoof;
-SDK::AFortInventory* winventory;
+SDK::AFortInventory* FortInventory;
 
 namespace Inventory {
-	static inline void SetupInventory() 
-	{
+    static inline void SetupInventory()
+    {
         m_pEditToolDef = SDK::UObject::FindObject<SDK::UFortEditToolItemDefinition>("FortEditToolItemDefinition EditTool.EditTool");
         m_pWallBuildDef = SDK::UObject::FindObject<SDK::UFortBuildingItemDefinition>("FortBuildingItemDefinition BuildingItemData_Wall.BuildingItemData_Wall");
         m_pFloorBuildDef = SDK::UObject::FindObject<SDK::UFortBuildingItemDefinition>("FortBuildingItemDefinition BuildingItemData_Floor.BuildingItemData_Floor");
@@ -118,22 +118,11 @@ namespace Inventory {
         auto pMetal = SDK::UObject::FindObject<SDK::UFortWeaponItemDefinition>("FortResourceItemDefinition MetalItemData.MetalItemData");
         auto pStone = SDK::UObject::FindObject<SDK::UFortWeaponItemDefinition>("FortResourceItemDefinition StoneItemData.StoneItemData");
         auto pRockets = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortAmmoItemDefinition AmmoDataRockets.AmmoDataRockets");
-        m_pgEditToolDef = Util::GenerateGuidPtr();
-        m_pgPickaxe = Util::GenerateGuidPtr();
-        m_pgWallBuild = Util::GenerateGuidPtr();
-        m_pgFloorBuild = Util::GenerateGuidPtr();
-        m_pgStairBuild = Util::GenerateGuidPtr();
-        m_pgRoofBuild = Util::GenerateGuidPtr();
         m_mItems.insert_or_assign(Util::GenerateGuidPtr(), pWood);
         m_mItems.insert_or_assign(Util::GenerateGuidPtr(), pMetal);
         m_mItems.insert_or_assign(Util::GenerateGuidPtr(), pStone);
         m_mItems.insert_or_assign(Util::GenerateGuidPtr(), pRockets);
-        m_mItems.insert_or_assign(m_pgPickaxe, m_pPickaxeDef);
-        m_mItems.insert_or_assign(m_pgWallBuild, m_pWallBuildDef);
-        m_mItems.insert_or_assign(m_pgFloorBuild, m_pFloorBuildDef);
-        m_mItems.insert_or_assign(m_pgStairBuild, m_pStairBuildDef);
-        m_mItems.insert_or_assign(m_pgRoofBuild, m_pRoofBuildDef);
-        m_mItems.insert_or_assign(m_pgEditToolDef, m_pEditToolDef);
+
         for (int i = 0; i < SDK::UObject::GetGlobalObjects().Num(); ++i)
         {
             auto pObject = SDK::UObject::GetGlobalObjects().GetByIndex(i);
@@ -160,74 +149,87 @@ namespace Inventory {
             }
         }
 
-        auto controller = static_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-        winventory = reinterpret_cast<WorldInventory*>(controller)->WorldInventory;
-        if (winventory)
-        {
-            SDK::FFortItemList* inv = &winventory->Inventory;
-            pItemInsts = &inv->ItemInstances;
-            pItemInsts->Count = m_mItems.size();
-            pItemInsts->Max = m_mItems.size();
-            pItemInsts->Data = (class SDK::UFortWorldItem**)::malloc(pItemInsts->Count * sizeof(SDK::UFortWorldItem*));
-            for (auto it = m_mItems.begin(); it != m_mItems.end(); it++) {
-                auto pItemEntry = new SDK::FFortItemEntry;
-                if (it->second->IsA(SDK::UFortWeaponItemDefinition::StaticClass()))
-                    pItemEntry->Count = 1;
-                else
-                    pItemEntry->Count = 100;
-                pItemEntry->ItemDefinition = it->second;
-                pItemEntry->Durability = it->second->GetMaxDurability(it->second->MaxLevel);
-                pItemEntry->Level = it->second->MaxLevel;
-                pItemEntry->ItemGuid = (*it->first);
-                pItemEntry->bIsDirty = false;
-                pItemEntry->bIsReplicatedCopy = true;
-                pItemEntry->LoadedAmmo = 0;
+        auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+        FortInventory = reinterpret_cast<WorldInventory*>(Cores::PlayerController)->WorldInventory;
 
-                auto pWorldItem = reinterpret_cast<SDK::UFortWorldItem*>(Cores::StaticConstructObject_Internal(SDK::UFortWorldItem::StaticClass(), winventory, SDK::FName("None"), 0, SDK::FUObjectItem::ObjectFlags::None, NULL, false, NULL, false));
-                pWorldItem->bTemporaryItemOwningController = true;
-                pWorldItem->SetOwningControllerForTemporaryItem(controller);
-                reinterpret_cast<OwnerInventory*>(pWorldItem)->OwnerInventory = winventory;
-                pWorldItem->ItemEntry = *pItemEntry;
-                pItemInsts->operator[](iInventoryIteration) = pWorldItem;
-                auto statval = new SDK::FFortItemEntryStateValue;
-                statval->IntValue = 1;
-                statval->NameValue = SDK::FName("Item");
-                statval->StateType = SDK::EFortItemEntryState::NewItemCount;
-                controller->ServerSetInventoryStateValue((*it->first), (*statval));
-                iInventoryIteration++;
+        for (auto it = m_mItems.begin(); it != m_mItems.end(); it++)
+        {
+            SDK::UFortItem* Item;
+            SDK::UFortWorldItem* WorldItem;
+
+            if (it->second->IsA(SDK::UFortWeaponItemDefinition::StaticClass())) {
+                Item = it->second->CreateTemporaryItemInstanceBP(1, 0);
+                WorldItem = reinterpret_cast<SDK::UFortWorldItem*>(Item);
+                WorldItem->ItemEntry.Count = 1;
+            } else {
+                Item = it->second->CreateTemporaryItemInstanceBP(999, 0);
+                WorldItem = reinterpret_cast<SDK::UFortWorldItem*>(Item);
+                WorldItem->ItemEntry.Count = 999;
             }
+
+            WorldItem->SetOwningControllerForTemporaryItem(FortController);
+
+            FortInventory->Inventory.ReplicatedEntries.Add(WorldItem->ItemEntry);
+            FortInventory->Inventory.ItemInstances.Add(WorldItem);
+
+            FortInventory->HandleInventoryLocalUpdate();
+            static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
         }
-	}
+
+        auto PickaxeItem = PickaxeDef->CreateTemporaryItemInstanceBP(1, 0);
+        auto WorldPickaxeItem = reinterpret_cast<SDK::UFortWorldItem*>(PickaxeItem);
+        WorldPickaxeItem->ItemEntry.Count = 1;
+        FortInventory->Inventory.ReplicatedEntries.Add(WorldPickaxeItem->ItemEntry);
+        FortInventory->Inventory.ItemInstances.Add(WorldPickaxeItem);
+        QuickBars->ServerAddItemInternal(WorldPickaxeItem->GetItemGuid(), SDK::EFortQuickBars::Primary, 0);
+
+        auto WallBuildItem = m_pWallBuildDef->CreateTemporaryItemInstanceBP(1, 0);
+        auto WallWorldBuildItem = reinterpret_cast<SDK::UFortWorldItem*>(WallBuildItem);
+        FortInventory->Inventory.ReplicatedEntries.Add(WallWorldBuildItem->ItemEntry);
+        FortInventory->Inventory.ItemInstances.Add(WallWorldBuildItem);
+        QuickBars->ServerAddItemInternal(WallWorldBuildItem->GetItemGuid(), SDK::EFortQuickBars::Secondary, 0);
+        WallGuid = WallWorldBuildItem->GetItemGuid();
+
+        auto FloorBuildItem = m_pFloorBuildDef->CreateTemporaryItemInstanceBP(1, 0);
+        auto FloorWorldBuildItem = reinterpret_cast<SDK::UFortWorldItem*>(FloorBuildItem);
+        FortInventory->Inventory.ReplicatedEntries.Add(FloorWorldBuildItem->ItemEntry);
+        FortInventory->Inventory.ItemInstances.Add(FloorWorldBuildItem);
+        QuickBars->ServerAddItemInternal(FloorWorldBuildItem->GetItemGuid(), SDK::EFortQuickBars::Secondary, 1);
+        FloorGuid = FloorWorldBuildItem->GetItemGuid();
+
+        auto StairBuildItem = m_pStairBuildDef->CreateTemporaryItemInstanceBP(1, 0);
+        auto StairWorldBuildItem = reinterpret_cast<SDK::UFortWorldItem*>(StairBuildItem);
+        FortInventory->Inventory.ReplicatedEntries.Add(StairWorldBuildItem->ItemEntry);
+        FortInventory->Inventory.ItemInstances.Add(StairWorldBuildItem);
+        QuickBars->ServerAddItemInternal(StairWorldBuildItem->GetItemGuid(), SDK::EFortQuickBars::Secondary, 2);
+        StairGuid = StairBuildItem->GetItemGuid();
+
+        auto RoofBuildItem = m_pRoofBuildDef->CreateTemporaryItemInstanceBP(1, 0);
+        auto RoofWorldBuildItem = reinterpret_cast<SDK::UFortWorldItem*>(RoofBuildItem);
+        FortInventory->Inventory.ReplicatedEntries.Add(RoofWorldBuildItem->ItemEntry);
+        FortInventory->Inventory.ItemInstances.Add(RoofWorldBuildItem);
+        QuickBars->ServerAddItemInternal(RoofWorldBuildItem->GetItemGuid(), SDK::EFortQuickBars::Secondary, 3);
+        RoofGuid = RoofWorldBuildItem->GetItemGuid();
+
+        FortInventory->HandleInventoryLocalUpdate();
+        static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
+    }
 
     static inline void SetupQuickbars() 
     {
-        auto controller = static_cast<SDK::AFortPlayerControllerAthena*>(Cores::PlayerController);
-        auto asfortquickbars = reinterpret_cast<AFortAsQuickBars*>(Cores::PlayerController);
-        Cores::PlayerController->CheatManager->Summon(TEXT("FortQuickBars"));
-        asfortquickbars->QuickBars = static_cast<SDK::AFortQuickBars*>(Util::FindActor(SDK::AFortQuickBars::StaticClass()));
-        asfortquickbars->QuickBars->SetOwner(Cores::PlayerController);
-        auto pQuickBars = static_cast<SDK::AFortQuickBars*>(Util::FindActor(SDK::AFortQuickBars::StaticClass()));
-        QuickBars = pQuickBars;
-        controller->Role = SDK::ENetRole::ROLE_None;
-        controller->OnRep_QuickBar();
-        controller->Role = SDK::ENetRole::ROLE_Authority;
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Secondary, 0);
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Secondary, 1);
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Secondary, 2);
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Secondary, 3);
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Secondary, 4);
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Secondary, 5);
-        asfortquickbars->QuickBars->EnableSlot(SDK::EFortQuickBars::Primary, 0);
-        pQuickBars->ServerAddItemInternal((*m_pgWallBuild), SDK::EFortQuickBars::Secondary, 0);
-        pQuickBars->ServerAddItemInternal((*m_pgFloorBuild), SDK::EFortQuickBars::Secondary, 1);
-        pQuickBars->ServerAddItemInternal((*m_pgStairBuild), SDK::EFortQuickBars::Secondary, 2);
-        pQuickBars->ServerAddItemInternal((*m_pgRoofBuild), SDK::EFortQuickBars::Secondary, 3);
-        pQuickBars->ServerAddItemInternal((*m_pgPickaxe), SDK::EFortQuickBars::Primary, 0);
-        pQuickBars->ServerActivateSlotInternal(SDK::EFortQuickBars::Primary, 0, 0, true);
+        auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+        QuickBars = reinterpret_cast<SDK::AFortQuickBars*>(Util::SpawnActor(SDK::AFortQuickBars::StaticClass(), SDK::FVector{ 0,0,3029 }, SDK::FRotator()));
+        reinterpret_cast<AFortAsQuickBars*>(Cores::PlayerController)->QuickBars = QuickBars;
+        QuickBars->SetOwner(Cores::PlayerController);
+
+        static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
+        QuickBars->OnRep_PrimaryQuickBar();
+        QuickBars->OnRep_SecondaryQuickBar();
     }
 
-    static inline void UpdateInventory() 
+    static inline void UpdateInventory()
     {
+        FortInventory->HandleInventoryLocalUpdate();
         static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
         static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
         QuickBars->OnRep_PrimaryQuickBar();
@@ -236,147 +238,31 @@ namespace Inventory {
 
     static inline void ShowBuildingPreview(SDK::EFortBuildingType);
 
-    static inline void ExecuteInventoryItem(SDK::FGuid* Guid) 
+    static inline void ExecuteInventoryItem(SDK::FGuid* Guid)
     {
-        for (auto it = m_mItems.begin(); it != m_mItems.end(); it++)
-        {
-            if (Util::AreGuidsTheSame((*it->first), (*Guid)))
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition(it->second, (*it->first));
-            }
-        }
-        for (auto it = m_mTraps.begin(); it != m_mTraps.end(); it++)
-        {
-            if (Util::AreGuidsTheSame((*it->first), (*Guid)))
-            {
-                if (!bTrapDone)
-                {
-                    m_pTrapC = nullptr;
-                    bTrapDone = true;
-                }
-                Cores::PlayerPawn->PickUpActor(m_pTrapC, it->second);
-                Cores::PlayerPawn->CurrentWeapon->ItemEntryGuid = (*it->first);
-            }
-        }
-        if (Util::AreGuidsTheSame((*Guid), (*m_pgWallBuild)))
-        {
-            if (m_iCurrentBuildPiece != 1)
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition(m_pWallBuildDef, (*Guid));
-                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForWall;
-                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = WallPreview;
-                ShowBuildingPreview(SDK::EFortBuildingType::Wall);
+        auto ItemInstances = FortInventory->Inventory.ItemInstances;
 
-                // building position fix
-                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                if (!m_bHasCycledWallOnce)
-                {
-                    cheatman->BuildWith(TEXT("Wood"));
-                    cheatman->BuildWith(TEXT("Stone"));
-                    cheatman->BuildWith(TEXT("Wood"));
-                    m_bHasCycledWallOnce = true;
-                }
-                if (m_bHasCycledWall != true)
-                {
-                    cheatman->BuildWith(m_sPendingMaterials);
-                    m_bHasCycledWall = true;
-                }
-                m_iCurrentBuildPiece = 1;
-                m_pLastBuildClassForWall = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
-            }
-        }
-        if (Util::AreGuidsTheSame((*Guid), (*m_pgFloorBuild)))
+        for (int i = 0; i < ItemInstances.Num(); i++)
         {
-            if (m_iCurrentBuildPiece != 2)
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition(m_pFloorBuildDef, (*Guid));
-                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForFloor;
-                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = FloorPreview;
-                ShowBuildingPreview(SDK::EFortBuildingType::Floor);
+            auto ItemInstance = ItemInstances.operator[](i);
 
-                // building position fix
-                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                if (!m_bHasCycledFloorOnce)
-                {
-                    cheatman->BuildWith(TEXT("Wood"));
-                    cheatman->BuildWith(TEXT("Stone"));
-                    cheatman->BuildWith(TEXT("Wood"));
-                    m_bHasCycledFloorOnce = true;
-                }
-                if (m_bHasCycledFloor != true)
-                {
-                    cheatman->BuildWith(m_sPendingMaterials);
-                    m_bHasCycledFloor = true;
-                }
-                m_iCurrentBuildPiece = 2;
-                m_pLastBuildClassForFloor = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
-            }
-        }
-        if (Util::AreGuidsTheSame((*Guid), (*m_pgStairBuild)))
-        {
-            if (m_iCurrentBuildPiece != 3)
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), (*Guid))) 
             {
-                Cores::PlayerPawn->EquipWeaponDefinition(m_pStairBuildDef, (*Guid));
-                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForStair;
-                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = StairPreview;
-                ShowBuildingPreview(SDK::EFortBuildingType::Stairs);
-
-                // building position fix
-                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                if (!m_bHasCycledStairOnce)
-                {
-                    cheatman->BuildWith(TEXT("Wood"));
-                    cheatman->BuildWith(TEXT("Stone"));
-                    cheatman->BuildWith(TEXT("Wood"));
-                    m_bHasCycledStairOnce = true;
-                }
-                if (m_bHasCycledStair != true)
-                {
-                    cheatman->BuildWith(m_sPendingMaterials);
-                    m_bHasCycledStair = true;
-                }
-                m_iCurrentBuildPiece = 3;
-                m_pLastBuildClassForStair = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
-            }
-        }
-        if (Util::AreGuidsTheSame((*Guid), (*m_pgRoofBuild)))
-        {
-            if (m_iCurrentBuildPiece != 4)
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition(m_pRoofBuildDef, (*Guid));
-                reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass = m_pLastBuildClassForRoof;
-                reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker = RoofPreview;
-                ShowBuildingPreview(SDK::EFortBuildingType::Roof);
-
-                // building position fix
-                auto cheatman = static_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                if (!m_bHasCycledRoofOnce)
-                {
-                    cheatman->BuildWith(TEXT("Wood"));
-                    cheatman->BuildWith(TEXT("Stone"));
-                    cheatman->BuildWith(TEXT("Wood"));
-                    m_bHasCycledRoofOnce = true;
-                }
-                if (m_bHasCycledRoof != true)
-                {
-                    cheatman->BuildWith(m_sPendingMaterials);
-                    m_bHasCycledRoof = true;
-                }
-                m_iCurrentBuildPiece = 4;
-                m_pLastBuildClassForRoof = reinterpret_cast<AFortAsCurrentBuildable*>(Cores::PlayerController)->CurrentBuildableClass;
+                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
             }
         }
     }
 
-    static inline void CreateBuildPreviews() 
+    static inline void CreateBuildPreviews()
     {
         m_pLastBuildClassForWall = SDK::APBWA_W1_Solid_C::StaticClass();
         m_pLastBuildClassForFloor = SDK::APBWA_W1_Floor_C::StaticClass();
         m_pLastBuildClassForStair = SDK::APBWA_W1_StairW_C::StaticClass();
         m_pLastBuildClassForRoof = SDK::APBWA_W1_RoofC_C::StaticClass();
         SDK::AFortPlayerController* playerController = static_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-        playerController->CheatManager->Summon(TEXT("BuildingPlayerPrimitivePreview"));
-        RoofPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::FindActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass()));
+        auto CurrentPawnPos = Cores::PlayerPawn->K2_GetActorLocation();
+        CurrentPawnPos.X = CurrentPawnPos.X + 543;
+        RoofPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::SpawnActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), CurrentPawnPos, SDK::FRotator()));
         auto pBuildingEditSupportRoof = reinterpret_cast<SDK::UBuildingEditModeSupport_Roof*>(Cores::StaticConstructObject_Internal(SDK::UBuildingEditModeSupport_Roof::StaticClass(), (*Cores::World), SDK::FName("None"), 0, SDK::FUObjectItem::ObjectFlags::None, NULL, false, NULL, false));
         pBuildingEditSupportRoof->Outer = RoofPreview;
 
@@ -403,9 +289,8 @@ namespace Inventory {
         RoofPreview->EditModeSupportClass = SDK::UBuildingEditModeSupport_Roof::StaticClass();
         RoofPreview->OnBuildingActorInitialized(SDK::EFortBuildingInitializationReason::PlacementTool, SDK::EFortBuildingPersistentState::New);
 
-
-        playerController->CheatManager->Summon(TEXT("BuildingPlayerPrimitivePreview"));
-        StairPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::FindActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), 1));
+        CurrentPawnPos.X = CurrentPawnPos.X + 653;
+        StairPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::SpawnActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), CurrentPawnPos, SDK::FRotator()));
         auto pBuildingEditSupportStair = reinterpret_cast<SDK::UBuildingEditModeSupport_Stair*>(Cores::StaticConstructObject_Internal(SDK::UBuildingEditModeSupport_Stair::StaticClass(), (*Cores::World), SDK::FName("None"), 0, SDK::FUObjectItem::ObjectFlags::None, NULL, false, NULL, false));
         pBuildingEditSupportStair->Outer = StairPreview;
 
@@ -433,8 +318,8 @@ namespace Inventory {
         StairPreview->OnBuildingActorInitialized(SDK::EFortBuildingInitializationReason::PlacementTool, SDK::EFortBuildingPersistentState::New);
 
 
-        playerController->CheatManager->Summon(TEXT("BuildingPlayerPrimitivePreview"));
-        FloorPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::FindActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), 2));
+        CurrentPawnPos.X = CurrentPawnPos.X + 543;
+        FloorPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::SpawnActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), CurrentPawnPos, SDK::FRotator()));
         auto pBuildingEditSupportFloor = reinterpret_cast<SDK::UBuildingEditModeSupport_Floor*>(Cores::StaticConstructObject_Internal(SDK::UBuildingEditModeSupport_Floor::StaticClass(), (*Cores::World), SDK::FName("None"), 0, SDK::FUObjectItem::ObjectFlags::None, NULL, false, NULL, false));
         pBuildingEditSupportFloor->Outer = reinterpret_cast<AFortAsBuildPreview*>(Cores::PlayerController)->BuildPreviewMarker;
 
@@ -462,8 +347,8 @@ namespace Inventory {
         FloorPreview->OnBuildingActorInitialized(SDK::EFortBuildingInitializationReason::PlacementTool, SDK::EFortBuildingPersistentState::New);
 
 
-        playerController->CheatManager->Summon(TEXT("BuildingPlayerPrimitivePreview"));
-        WallPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::FindActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), 3));
+        CurrentPawnPos.X = CurrentPawnPos.X + 345;
+        WallPreview = static_cast<SDK::ABuildingPlayerPrimitivePreview*>(Util::SpawnActor(SDK::ABuildingPlayerPrimitivePreview::StaticClass(), CurrentPawnPos, SDK::FRotator()));
         auto pBuildingEditSupportWall = reinterpret_cast<SDK::UBuildingEditModeSupport_Wall*>(Cores::StaticConstructObject_Internal(SDK::UBuildingEditModeSupport_Wall::StaticClass(), (*Cores::World), SDK::FName("None"), 0, SDK::FUObjectItem::ObjectFlags::None, NULL, false, NULL, false));
         pBuildingEditSupportWall->Outer = WallPreview;
 
@@ -496,9 +381,9 @@ namespace Inventory {
         RoofPreview->SetActorHiddenInGame(true);
     }
 
-    static inline void ShowBuildingPreview(SDK::EFortBuildingType type) 
+    static inline void ShowBuildingPreview(SDK::EFortBuildingType type)
     {
-        switch(type) 
+        switch (type)
         {
         case SDK::EFortBuildingType::Wall:
             WallPreview->SetActorHiddenInGame(false);
@@ -535,5 +420,14 @@ namespace Inventory {
             RoofPreview->SetActorHiddenInGame(true);
             break;
         }
+    }
+
+    static void DropPickupAtLocation(SDK::UFortItemDefinition* ItemDef, int Count) 
+    {
+        auto FortPickup = reinterpret_cast<SDK::AFortPickupBackpack*>(Util::SpawnActor(SDK::AFortPickupBackpack::StaticClass(), Cores::PlayerPawn->K2_GetActorLocation(), SDK::FRotator()));
+        FortPickup->PrimaryPickupItemEntry.ItemDefinition = ItemDef;
+        FortPickup->PrimaryPickupItemEntry.Count = Count;
+        FortPickup->OnRep_PrimaryPickupItemEntry();
+        FortPickup->TossPickup(Cores::PlayerPawn->K2_GetActorLocation(), Cores::PlayerPawn, 999, true);
     }
 }
