@@ -161,7 +161,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
         {
-            //Inventory::CreateBuildPreviews();
             Inventory::SetupQuickbars();
             Inventory::SetupInventory();
             Inventory::UpdateInventory();
