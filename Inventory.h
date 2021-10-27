@@ -208,9 +208,25 @@ namespace Inventory {
         {
             auto ItemInstance = ItemInstances.operator[](i);
 
-            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), (*Guid))) 
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), (*Guid)) && !reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode()) 
             {
                 Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
+            }
+
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), WallGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
+            {
+            }
+
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), FloorGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
+            {
+            }
+
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), StairGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
+            {
+            }
+
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), RoofGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
+            {
             }
         }
     }
@@ -222,5 +238,13 @@ namespace Inventory {
         FortPickup->PrimaryPickupItemEntry.Count = Count;
         FortPickup->OnRep_PrimaryPickupItemEntry();
         FortPickup->TossPickup(Cores::PlayerPawn->K2_GetActorLocation(), Cores::PlayerPawn, 999, true);
+    }
+
+    static void AddItemToInventory(SDK::UFortItemDefinition* ItemDef, int Level, int Count) 
+    {
+        auto Item = ItemDef->CreateTemporaryItemInstanceBP(Level, Count);
+        auto WorldItem = reinterpret_cast<SDK::UFortWorldItem*>(Item);
+        FortInventory->Inventory.ReplicatedEntries.Add(WorldItem->ItemEntry);
+        FortInventory->Inventory.ItemInstances.Add(WorldItem);
     }
 }

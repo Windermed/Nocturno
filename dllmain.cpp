@@ -5,6 +5,9 @@
 #include "HuskAI.h"
 #include <ostream>
 #include <iostream>
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
 
 #pragma comment(lib, "minhook/minhook.lib")
 
@@ -150,6 +153,21 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
+        if (function->GetName().find("ServerHandlePickup") != std::string::npos && bIsInGame) 
+        {
+            struct ServerHandlePickupParams
+            {
+                SDK::UFortItemDefinition *Pickup;
+                float InFlyTime;
+                SDK::FVector InStartDirection;
+                bool bPlayPickupSound;
+            };
+
+            auto Params = (ServerHandlePickupParams*)(params);
+
+            //Inventory::AddItemToInventory(Params->Pickup, 125, 1);
+        }
+
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
         {
             //Jumping
@@ -186,10 +204,8 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
             MH_EnableHook((LPVOID)(GCADDR));
-        }
 
-        if (!function->GetName().find("Tick")) 
-        {
+            Inventory::DropPickupAtLocation(PickaxeDef, 1);
         }
     }
 
