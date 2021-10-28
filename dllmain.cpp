@@ -44,7 +44,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos)
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Outpost_Stonewood");
+            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_FarmsteadFort");
             bIsReady = true;
         }
 

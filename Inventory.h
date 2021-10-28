@@ -215,18 +215,26 @@ namespace Inventory {
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), WallGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                FortManager->BuildWith(L"Wood");
             }
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), FloorGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                FortManager->BuildWith(L"Wood");
             }
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), StairGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                FortManager->BuildWith(L"Wood");
             }
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), RoofGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
+                FortManager->BuildWith(L"Wood");
             }
         }
     }
