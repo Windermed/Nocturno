@@ -70,8 +70,11 @@ SDK::UFortWeaponMeleeItemDefinition* PickaxeDef;
 std::map<SDK::FGuid*, SDK::UFortWeaponItemDefinition*> Items;
 std::map<SDK::FGuid*, SDK::UFortTrapItemDefinition*> Traps;
 SDK::AFortInventory* FortInventory;
+SDK::TArray<SDK::UFortWorldItem*> ItemInstances;
 
 namespace Inventory {
+    static inline void UpdateInventory();
+
     static inline void SetupInventory()
     {
         auto EditToolDef = SDK::UObject::FindObject<SDK::UFortEditToolItemDefinition>("FortEditToolItemDefinition EditTool.EditTool");
@@ -137,8 +140,7 @@ namespace Inventory {
             FortInventory->Inventory.ReplicatedEntries.Add(WorldItem->ItemEntry);
             FortInventory->Inventory.ItemInstances.Add(WorldItem);
 
-            FortInventory->HandleInventoryLocalUpdate();
-            static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
+            UpdateInventory();
         }
 
         auto PickaxeItem = PickaxeDef->CreateTemporaryItemInstanceBP(1, 0);
@@ -176,8 +178,7 @@ namespace Inventory {
         QuickBars->ServerAddItemInternal(RoofWorldBuildItem->GetItemGuid(), SDK::EFortQuickBars::Secondary, 3);
         RoofGuid = RoofWorldBuildItem->GetItemGuid();
 
-        FortInventory->HandleInventoryLocalUpdate();
-        static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
+        UpdateInventory();
     }
 
     static inline void SetupQuickbars() 
@@ -199,12 +200,11 @@ namespace Inventory {
         static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
         QuickBars->OnRep_PrimaryQuickBar();
         QuickBars->OnRep_SecondaryQuickBar();
+        ItemInstances = FortInventory->Inventory.ItemInstances;
     }
 
     static inline void ExecuteInventoryItem(SDK::FGuid* Guid)
     {
-        auto ItemInstances = FortInventory->Inventory.ItemInstances;
-
         for (int i = 0; i < ItemInstances.Num(); i++)
         {
             auto ItemInstance = ItemInstances.operator[](i);

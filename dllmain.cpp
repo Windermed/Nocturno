@@ -119,16 +119,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        /*if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
-        {
-            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-            auto CurrentBuildClass = FortController->CurrentBuildableClass;
-            auto LastBuildPreviewLocation = FortController->LastBuildPreviewGridSnapLoc;
-            auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
-            auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
-            BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
-        }*/
-
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
@@ -214,12 +204,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortCheatManager->GiveAllWeapons(); // gives all of the weapons
             FortCheatManager->GiveResources(999); // gives the player maximum mats
             FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
-
-            auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
-            MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
-            MH_EnableHook((LPVOID)(GCADDR));
-
-            Inventory::DropPickupAtLocation(PickaxeDef, 1);
         }
     }
 
