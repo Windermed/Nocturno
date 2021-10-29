@@ -105,7 +105,21 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
+        if (function->GetName().find("HandleBuildingMaterialChanged") != std::string::npos)
+        {
+            auto controller = static_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+            auto buildtool = reinterpret_cast<SDK::AFortWeap_BuildingTool*>(controller->MyFortPawn->CurrentWeapon);
+
+            if (buildtool->LastResourceType == SDK::EFortResourceType::Wood) {
+                BuildingMat = L"Wood";
+            } else if (buildtool->LastResourceType == SDK::EFortResourceType::Stone) {
+                BuildingMat = L"Stone";
+            } else if (buildtool->LastResourceType == SDK::EFortResourceType::Metal) {
+                BuildingMat = L"Metal";
+            }
+        }
+
+        /*if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
         {
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto CurrentBuildClass = FortController->CurrentBuildableClass;
@@ -113,7 +127,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
             auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
             BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
-        }
+        }*/
 
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
@@ -194,7 +208,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
             FortCheatManager->CraftFree(); //Lets you craft anything but it doesn't work as of right now
-            FortCheatManager->BackpackSetSize(69420); //funny number go brr
+            FortCheatManager->BackpackSetSize(3000); //funny number go brr
             FortCheatManager->GiveCheatInventory(); // gives the player all of the items in-game
             FortCheatManager->EvolveHero(); //Evolves the hero i hope
             FortCheatManager->GiveAllWeapons(); // gives all of the weapons

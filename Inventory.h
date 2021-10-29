@@ -58,6 +58,7 @@ public:
     class SDK::UMaterialInstanceDynamic* BuildPreviewMarkerMID;
 };
 
+SDK::FString BuildingMat = L"Wood";
 SDK::AFortQuickBars* QuickBars;
 SDK::FGuid EditToolGuid;
 SDK::FGuid PickaxeGuid;
@@ -215,26 +216,30 @@ namespace Inventory {
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), WallGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
                 auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(L"Wood");
+                FortManager->BuildWith(BuildingMat);
             }
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), FloorGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
                 auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(L"Wood");
+                FortManager->BuildWith(BuildingMat);
             }
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), StairGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
                 auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(L"Wood");
+                FortManager->BuildWith(BuildingMat);
             }
 
             if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), RoofGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
             {
+                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
                 auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(L"Wood");
+                FortManager->BuildWith(BuildingMat);
             }
         }
     }
@@ -246,13 +251,5 @@ namespace Inventory {
         FortPickup->PrimaryPickupItemEntry.Count = Count;
         FortPickup->OnRep_PrimaryPickupItemEntry();
         FortPickup->TossPickup(Cores::PlayerPawn->K2_GetActorLocation(), Cores::PlayerPawn, 999, true);
-    }
-
-    static void AddItemToInventory(SDK::UFortItemDefinition* ItemDef, int Level, int Count) 
-    {
-        auto Item = ItemDef->CreateTemporaryItemInstanceBP(Level, Count);
-        auto WorldItem = reinterpret_cast<SDK::UFortWorldItem*>(Item);
-        FortInventory->Inventory.ReplicatedEntries.Add(WorldItem->ItemEntry);
-        FortInventory->Inventory.ItemInstances.Add(WorldItem);
     }
 }
