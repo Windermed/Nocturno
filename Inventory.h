@@ -184,10 +184,11 @@ namespace Inventory {
     static inline void SetupQuickbars() 
     {
         auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-        QuickBars = reinterpret_cast<SDK::AFortQuickBars*>(Util::SpawnActor(SDK::AFortQuickBars::StaticClass(), SDK::FVector{ 0,0,3029 }, SDK::FRotator()));
+        Cores::PlayerController->CheatManager->Summon(L"FortQuickBars");
+        QuickBars = static_cast<SDK::AFortQuickBars*>(Util::FindActor(SDK::AFortQuickBars::StaticClass()));
         reinterpret_cast<AFortAsQuickBars*>(Cores::PlayerController)->QuickBars = QuickBars;
         QuickBars->SetOwner(Cores::PlayerController);
-
+        
         static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
         QuickBars->OnRep_PrimaryQuickBar();
         QuickBars->OnRep_SecondaryQuickBar();
@@ -205,43 +206,6 @@ namespace Inventory {
 
     static inline void ExecuteInventoryItem(SDK::FGuid* Guid)
     {
-        for (int i = 0; i < ItemInstances.Num(); i++)
-        {
-            auto ItemInstance = ItemInstances.operator[](i);
-
-            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), (*Guid)) && !reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode()) 
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
-            }
-
-            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), WallGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
-                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(BuildingMat);
-            }
-
-            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), FloorGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
-                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(BuildingMat);
-            }
-
-            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), StairGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
-                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(BuildingMat);
-            }
-
-            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), RoofGuid) && reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->IsInBuildMode())
-            {
-                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
-                auto FortManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
-                FortManager->BuildWith(BuildingMat);
-            }
-        }
     }
 
     static void DropPickupAtLocation(SDK::UFortItemDefinition* ItemDef, int Count) 

@@ -44,7 +44,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos)
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Outpost_TwinePeaks");
+            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_Suburban_a");
             bIsReady = true;
         }
 
@@ -70,7 +70,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 }
                 // allows for the game to possess the pawn and sets the player pawn's location and state
                 Cores::PlayerController->Possess(Cores::PlayerPawn);
-                Cores::PlayerController->CheatManager->BugItGo(1, 1, 100000, 0, 0, 0);
+                Cores::PlayerController->CheatManager->BugItGo(1, 1, 10000, 0, 0, 0);
                 Cores::PlayerController->CheatManager->God();
                 Cores::PlayerController->CheatManager->Slomo(1);
                 printf("Pawn!\n");
