@@ -186,10 +186,23 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 HuskAI::SpawnHusk();
             }
 
-            if (reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint && !Cores::PlayerPawn->CurrentWeapon->bIsReloadingWeapon)
+            if (reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint)
                 Cores::PlayerPawn->CurrentMovementStyle = SDK::EFortMovementStyle::Sprinting;
             else
                 Cores::PlayerPawn->CurrentMovementStyle = SDK::EFortMovementStyle::Walking;
+        }
+
+        if (function->GetName().find("ServerCraftSchematic") != std::string::npos && bIsInGame)
+        {
+            struct Params
+            {
+                const struct SDK::FString& ItemId;
+                int PostCraftSlot;
+                bool bIsQuickCrafted;
+            };
+            auto params_ = (Params*)(params);
+
+            std::cout << params_->ItemId.ToString() << std::endl;
         }
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
