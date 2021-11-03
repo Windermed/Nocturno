@@ -186,7 +186,10 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 HuskAI::SpawnHusk();
             }
 
-            Cores::PlayerPawn->CurrentMovementStyle = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint ? SDK::EFortMovementStyle::Walking : SDK::EFortMovementStyle::Sprinting;
+            if (reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint && !Cores::PlayerPawn->CurrentWeapon->bIsReloadingWeapon)
+                Cores::PlayerPawn->CurrentMovementStyle = SDK::EFortMovementStyle::Sprinting;
+            else
+                Cores::PlayerPawn->CurrentMovementStyle = SDK::EFortMovementStyle::Walking;
         }
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
