@@ -102,23 +102,13 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
-        {
-            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-            auto CurrentBuildClass = FortController->CurrentBuildableClass;
-            auto LastBuildPreviewLocation = FortController->LastBuildPreviewGridSnapLoc;
-            auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
-            auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
-            BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
-        }
-
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
             Inventory::ExecuteInventoryItem(guid);
         }
 
-        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
+        if (function->GetName().find("ServerRemoveInventoryItem") != std::string::npos && bIsInGame) 
         {
             struct Params_
             {
