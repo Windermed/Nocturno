@@ -58,7 +58,6 @@ public:
     class SDK::UMaterialInstanceDynamic* BuildPreviewMarkerMID;
 };
 
-SDK::FString BuildingMat = L"Wood";
 SDK::AFortQuickBars* QuickBars;
 SDK::FGuid EditToolGuid;
 SDK::FGuid PickaxeGuid;
@@ -70,11 +69,8 @@ SDK::UFortWeaponMeleeItemDefinition* PickaxeDef;
 std::map<SDK::FGuid*, SDK::UFortWeaponItemDefinition*> Items;
 std::map<SDK::FGuid*, SDK::UFortTrapItemDefinition*> Traps;
 SDK::AFortInventory* FortInventory;
-SDK::TArray<SDK::UFortWorldItem*> ItemInstances;
 
 namespace Inventory {
-    static inline void UpdateInventory();
-
     static inline void SetupInventory()
     {
         auto EditToolDef = SDK::UObject::FindObject<SDK::UFortEditToolItemDefinition>("FortEditToolItemDefinition EditTool.EditTool");
@@ -140,7 +136,8 @@ namespace Inventory {
             FortInventory->Inventory.ReplicatedEntries.Add(WorldItem->ItemEntry);
             FortInventory->Inventory.ItemInstances.Add(WorldItem);
 
-            UpdateInventory();
+            FortInventory->HandleInventoryLocalUpdate();
+            static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
         }
 
         auto PickaxeItem = PickaxeDef->CreateTemporaryItemInstanceBP(1, 0);
@@ -178,17 +175,17 @@ namespace Inventory {
         QuickBars->ServerAddItemInternal(RoofWorldBuildItem->GetItemGuid(), SDK::EFortQuickBars::Secondary, 3);
         RoofGuid = RoofWorldBuildItem->GetItemGuid();
 
-        UpdateInventory();
+        FortInventory->HandleInventoryLocalUpdate();
+        static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->HandleWorldInventoryLocalUpdate();
     }
 
     static inline void SetupQuickbars() 
     {
         auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-        Cores::PlayerController->CheatManager->Summon(L"FortQuickBars");
-        QuickBars = static_cast<SDK::AFortQuickBars*>(Util::FindActor(SDK::AFortQuickBars::StaticClass()));
+        QuickBars = reinterpret_cast<SDK::AFortQuickBars*>(Util::SpawnActor(SDK::AFortQuickBars::StaticClass(), SDK::FVector{ 0,0,3029 }, SDK::FRotator()));
         reinterpret_cast<AFortAsQuickBars*>(Cores::PlayerController)->QuickBars = QuickBars;
         QuickBars->SetOwner(Cores::PlayerController);
-        
+
         static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
         QuickBars->OnRep_PrimaryQuickBar();
         QuickBars->OnRep_SecondaryQuickBar();
@@ -201,11 +198,21 @@ namespace Inventory {
         static_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->OnRep_QuickBar();
         QuickBars->OnRep_PrimaryQuickBar();
         QuickBars->OnRep_SecondaryQuickBar();
-        ItemInstances = FortInventory->Inventory.ItemInstances;
     }
 
     static inline void ExecuteInventoryItem(SDK::FGuid* Guid)
     {
+        auto ItemInstances = FortInventory->Inventory.ItemInstances;
+
+        for (int i = 0; i < ItemInstances.Num(); i++)
+        {
+            auto ItemInstance = ItemInstances.operator[](i);
+
+            if (Util::AreGuidsTheSame(ItemInstance->GetItemGuid(), (*Guid))) 
+            {
+                Cores::PlayerPawn->EquipWeaponDefinition((SDK::UFortWeaponItemDefinition*)ItemInstance->GetItemDefinitionBP(), (*Guid));
+            }
+        }
     }
 
     static void DropPickupAtLocation(SDK::UFortItemDefinition* ItemDef, int Count) 

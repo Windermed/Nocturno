@@ -5,9 +5,6 @@
 #include "HuskAI.h"
 #include <ostream>
 #include <iostream>
-#include "nlohmann/json.hpp"
-
-using json = nlohmann::json;
 
 #pragma comment(lib, "minhook/minhook.lib")
 
@@ -44,7 +41,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos)
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_Suburban_a");
+            Cores::PlayerController->SwitchLevel(L"Zone_Outpost_Stonewood");
             bIsReady = true;
         }
 
@@ -105,18 +102,14 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        if (function->GetName().find("HandleBuildingMaterialChanged") != std::string::npos)
+        if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
         {
-            auto controller = static_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-            auto buildtool = reinterpret_cast<SDK::AFortWeap_BuildingTool*>(controller->MyFortPawn->CurrentWeapon);
-
-            if (buildtool->LastResourceType == SDK::EFortResourceType::Wood) {
-                BuildingMat = L"Wood";
-            } else if (buildtool->LastResourceType == SDK::EFortResourceType::Stone) {
-                BuildingMat = L"Stone";
-            } else if (buildtool->LastResourceType == SDK::EFortResourceType::Metal) {
-                BuildingMat = L"Metal";
-            }
+            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+            auto CurrentBuildClass = FortController->CurrentBuildableClass;
+            auto LastBuildPreviewLocation = FortController->LastBuildPreviewGridSnapLoc;
+            auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
+            auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
+            BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
         }
 
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
@@ -125,7 +118,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Inventory::ExecuteInventoryItem(guid);
         }
 
-        if (function->GetName().find("ServerRemoveInventoryItem") != std::string::npos && bIsInGame)
+        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
         {
             struct Params_
             {
@@ -147,29 +140,14 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 }
             }
 
-            for (int i = 0; i < QuickbarSlots.Num(); i++)
+            for (int i = 0; i < QuickbarSlots.Num(); i++) 
             {
-                if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid))
+                if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid)) 
                 {
                     QuickBars->EmptySlot(SDK::EFortQuickBars::Primary, i);
                     Inventory::UpdateInventory();
                 }
             }
-        }
-
-        if (function->GetName().find("ServerHandlePickup") != std::string::npos && bIsInGame) 
-        {
-            struct ServerHandlePickupParams
-            {
-                SDK::UFortItemDefinition *Pickup;
-                float InFlyTime;
-                SDK::FVector InStartDirection;
-                bool bPlayPickupSound;
-            };
-
-            auto Params = (ServerHandlePickupParams*)(params);
-
-            //Inventory::AddItemToInventory(Params->Pickup, 125, 1);
         }
 
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
@@ -186,23 +164,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 HuskAI::SpawnHusk();
             }
 
-            if (reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint)
-                Cores::PlayerPawn->CurrentMovementStyle = SDK::EFortMovementStyle::Sprinting;
-            else
-                Cores::PlayerPawn->CurrentMovementStyle = SDK::EFortMovementStyle::Walking;
-        }
-
-        if (function->GetName().find("ServerCraftSchematic") != std::string::npos && bIsInGame)
-        {
-            struct Params
-            {
-                const struct SDK::FString& ItemId;
-                int PostCraftSlot;
-                bool bIsQuickCrafted;
-            };
-            auto params_ = (Params*)(params);
-
-            std::cout << params_->ItemId.ToString() << std::endl;
+            Cores::PlayerPawn->CurrentMovementStyle = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController)->bWantsToSprint ? SDK::EFortMovementStyle::Walking : SDK::EFortMovementStyle::Sprinting;
         }
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
@@ -214,12 +176,20 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
             FortCheatManager->CraftFree(); //Lets you craft anything but it doesn't work as of right now
-            FortCheatManager->BackpackSetSize(3000); //funny number go brr
+            FortCheatManager->BackpackSetSize(69420); //funny number go brr
             FortCheatManager->GiveCheatInventory(); // gives the player all of the items in-game
             FortCheatManager->EvolveHero(); //Evolves the hero i hope
             FortCheatManager->GiveAllWeapons(); // gives all of the weapons
             FortCheatManager->GiveResources(999); // gives the player maximum mats
             FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
+
+            auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
+            MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
+            MH_EnableHook((LPVOID)(GCADDR));
+        }
+
+        if (!function->GetName().find("Tick")) 
+        {
         }
     }
 

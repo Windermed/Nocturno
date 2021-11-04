@@ -43,9 +43,6 @@
     <Filter Include="Game">
       <UniqueIdentifier>{d4847c82-93de-4a42-a70d-3cbed2a545de}</UniqueIdentifier>
     </Filter>
-    <Filter Include="External">
-      <UniqueIdentifier>{35e524ad-db89-4ddb-a7d0-9b5365aec72a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
