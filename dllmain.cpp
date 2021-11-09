@@ -84,6 +84,11 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 FortPlayerState->OnRep_CharacterParts();
                 Cores::PlayerPawn->OnCharacterPartsReinitialized();
 
+                auto PlayerStateOutpost = reinterpret_cast<SDK::AFortPlayerStateOutpost*>(Cores::PlayerController->PlayerState);
+                PlayerStateOutpost->bShowHeroHeadAccessories = true;
+                PlayerStateOutpost->OnRep_ShowHeroHeadAccessories();
+                PlayerStateOutpost->ServerSetCanEditOutpost(PlayerStateOutpost, true);
+
                 // sets the pickaxe for the player pawn
                 auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T05.WID_Harvest_Pickaxe_SR_T05");
                 PickaxeDef = pickaxeDef;
@@ -108,7 +113,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Inventory::ExecuteInventoryItem(guid);
         }
 
-        if (function->GetName().find("ServerRemoveInventoryItem") != std::string::npos && bIsInGame) 
+        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
         {
             struct Params_
             {
@@ -173,13 +178,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortCheatManager->GiveResources(999); // gives the player maximum mats
             FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
 
-            auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
+            /*auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
-            MH_EnableHook((LPVOID)(GCADDR));
-        }
-
-        if (!function->GetName().find("Tick")) 
-        {
+            MH_EnableHook((LPVOID)(GCADDR));*/
         }
     }
 
