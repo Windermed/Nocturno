@@ -1,10 +1,16 @@
-﻿#include <Windows.h>
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
+#include "Server.h"
+#include <Windows.h>
 #include "Util.h"
 #include "minhook/MinHook.h"
 #include "Inventory.h"
 #include "HuskAI.h"
 #include <ostream>
 #include <iostream>
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
 
 #pragma comment(lib, "minhook/minhook.lib")
 
@@ -34,6 +40,87 @@ bool bIsReady = false;
 bool bHasSpawned = false;
 bool bIsInGame = false;
 
+DWORD WINAPI ServerThread(LPVOID)
+{
+    while (1) {
+        if (GetAsyncKeyState(0x57)) /*W*/ {
+            json j;
+            j["Function"] = "SetTransform";
+            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
+            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
+            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
+            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
+            j["Params"]["ScaleVal"] = 1;
+            j["Params"]["Id"] = LocalPlayerId;
+            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
+            return 1;
+        } else if (GetAsyncKeyState(0x41)) /*A*/ {
+            json j;
+            j["Function"] = "SetTransform";
+            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
+            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
+            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
+            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
+            j["Params"]["ScaleVal"] = 1;
+            j["Params"]["Id"] = LocalPlayerId;
+            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
+            return 1;
+        } else if (GetAsyncKeyState(0x53)) /*S*/ {
+            json j;
+            j["Function"] = "SetTransform";
+            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
+            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
+            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
+            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
+            j["Params"]["ScaleVal"] = -1;
+            j["Params"]["Id"] = LocalPlayerId;
+            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
+            return 1;
+        } else if (GetAsyncKeyState(0x44)) /*D*/ {
+            json j;
+            j["Function"] = "SetTransform";
+            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
+            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
+            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
+            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
+            j["Params"]["ScaleVal"] = -1;
+            j["Params"]["Id"] = LocalPlayerId;
+            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
+            return 1;
+        } else if (GetAsyncKeyState(VK_SPACE)) {
+            json j;
+            j["Function"] = "Jump";
+            j["Params"]["Id"] = LocalPlayerId;
+            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
+            return 1;
+        }
+
+        json j;
+        j["Function"] = "SetTransform";
+        j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+        j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
+        j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
+        j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
+        j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
+        j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
+        j["Params"]["ScaleVal"] = 1;
+        j["Params"]["Id"] = LocalPlayerId;
+        send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
+
+        Sleep(1000 / 25);
+    }
+
+    return 1;
+}
+
 PVOID(*ProcessEvent)(SDK::UObject*, SDK::UFunction*, PVOID) = nullptr;
 PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID params) 
 {
@@ -41,7 +128,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos)
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Outpost_Stonewood");
+            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_Suburban_a");
             bIsReady = true;
         }
 
@@ -84,11 +171,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 FortPlayerState->OnRep_CharacterParts();
                 Cores::PlayerPawn->OnCharacterPartsReinitialized();
 
-                auto PlayerStateOutpost = reinterpret_cast<SDK::AFortPlayerStateOutpost*>(Cores::PlayerController->PlayerState);
-                PlayerStateOutpost->bShowHeroHeadAccessories = true;
-                PlayerStateOutpost->OnRep_ShowHeroHeadAccessories();
-                PlayerStateOutpost->ServerSetCanEditOutpost(PlayerStateOutpost, true);
-
                 // sets the pickaxe for the player pawn
                 auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T05.WID_Harvest_Pickaxe_SR_T05");
                 PickaxeDef = pickaxeDef;
@@ -111,38 +193,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
             Inventory::ExecuteInventoryItem(guid);
-        }
-
-        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
-        {
-            struct Params_
-            {
-                SDK::FGuid ItemGuid;
-                int Count;
-            };
-
-            auto Params = (Params_*)(params);
-            auto ItemInstances = FortInventory->Inventory.ItemInstances;
-            auto QuickbarSlots = QuickBars->PrimaryQuickBar.Slots;
-
-            for (int i = 0; i < ItemInstances.Num(); i++)
-            {
-                auto ItemInstance = ItemInstances.operator[](i);
-
-                if (Util::AreGuidsTheSame(Params->ItemGuid, ItemInstance->GetItemGuid()))
-                {
-                    Inventory::DropPickupAtLocation(ItemInstance->GetItemDefinitionBP(), Params->Count);
-                }
-            }
-
-            for (int i = 0; i < QuickbarSlots.Num(); i++) 
-            {
-                if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid)) 
-                {
-                    QuickBars->EmptySlot(SDK::EFortQuickBars::Primary, i);
-                    Inventory::UpdateInventory();
-                }
-            }
         }
 
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
@@ -181,6 +231,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             /*auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
             MH_EnableHook((LPVOID)(GCADDR));*/
+
+            ConnectServer();
+            CreateThread(0, 0, ServerThread, 0, 0, 0);
         }
     }
 

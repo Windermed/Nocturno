@@ -35,6 +35,9 @@
     <ClInclude Include="HuskAI.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>MP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sdk">
@@ -43,8 +46,14 @@
     <Filter Include="Game">
       <UniqueIdentifier>{d4847c82-93de-4a42-a70d-3cbed2a545de}</UniqueIdentifier>
     </Filter>
+    <Filter Include="MP">
+      <UniqueIdentifier>{de3bcf14-6dc5-4ac9-b426-297a0d6789e4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include="PlayerStruct.h">
+      <Filter>MP</Filter>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
 </Project>
