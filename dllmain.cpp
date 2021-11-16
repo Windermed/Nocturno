@@ -1,16 +1,10 @@
-﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
-#include "Server.h"
-#include <Windows.h>
+﻿#include <Windows.h>
 #include "Util.h"
 #include "minhook/MinHook.h"
 #include "Inventory.h"
 #include "HuskAI.h"
 #include <ostream>
 #include <iostream>
-#include "nlohmann/json.hpp"
-
-using json = nlohmann::json;
 
 #pragma comment(lib, "minhook/minhook.lib")
 
@@ -40,85 +34,13 @@ bool bIsReady = false;
 bool bHasSpawned = false;
 bool bIsInGame = false;
 
-DWORD WINAPI ServerThread(LPVOID)
+DWORD WINAPI InventoryThread(LPVOID)
 {
-    while (1) {
-        if (GetAsyncKeyState(0x57)) /*W*/ {
-            json j;
-            j["Function"] = "SetTransform";
-            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
-            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
-            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
-            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
-            j["Params"]["ScaleVal"] = 1;
-            j["Params"]["Id"] = LocalPlayerId;
-            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
-            return 1;
-        } else if (GetAsyncKeyState(0x41)) /*A*/ {
-            json j;
-            j["Function"] = "SetTransform";
-            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
-            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
-            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
-            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
-            j["Params"]["ScaleVal"] = 1;
-            j["Params"]["Id"] = LocalPlayerId;
-            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
-            return 1;
-        } else if (GetAsyncKeyState(0x53)) /*S*/ {
-            json j;
-            j["Function"] = "SetTransform";
-            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
-            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
-            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
-            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
-            j["Params"]["ScaleVal"] = -1;
-            j["Params"]["Id"] = LocalPlayerId;
-            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
-            return 1;
-        } else if (GetAsyncKeyState(0x44)) /*D*/ {
-            json j;
-            j["Function"] = "SetTransform";
-            j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
-            j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-            j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
-            j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
-            j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
-            j["Params"]["ScaleVal"] = -1;
-            j["Params"]["Id"] = LocalPlayerId;
-            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
-            return 1;
-        } else if (GetAsyncKeyState(VK_SPACE)) {
-            json j;
-            j["Function"] = "Jump";
-            j["Params"]["Id"] = LocalPlayerId;
-            send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
-            return 1;
-        }
+    Inventory::SetupQuickbars();
+    Inventory::SetupInventory();
+    Inventory::UpdateInventory();
 
-        json j;
-        j["Function"] = "SetTransform";
-        j["Params"]["Loc"]["X"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-        j["Params"]["Loc"]["Y"] = Cores::PlayerPawn->K2_GetActorLocation().Y;
-        j["Params"]["Loc"]["Z"] = Cores::PlayerPawn->K2_GetActorLocation().X;
-        j["Params"]["Rot"]["Pitch"] = Cores::PlayerPawn->K2_GetActorRotation().Pitch;
-        j["Params"]["Rot"]["Yaw"] = Cores::PlayerPawn->K2_GetActorRotation().Yaw;
-        j["Params"]["Rot"]["Roll"] = Cores::PlayerPawn->K2_GetActorRotation().Roll;
-        j["Params"]["ScaleVal"] = 1;
-        j["Params"]["Id"] = LocalPlayerId;
-        send(Socket, j.dump().c_str(), sizeof(j.dump().c_str()), 0);
-
-        Sleep(1000 / 25);
-    }
-
-    return 1;
+    return NULL;
 }
 
 PVOID(*ProcessEvent)(SDK::UObject*, SDK::UFunction*, PVOID) = nullptr;
@@ -214,9 +136,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
         {
-            Inventory::SetupQuickbars();
-            Inventory::SetupInventory();
-            Inventory::UpdateInventory();
+            CreateThread(0, 0, InventoryThread, 0, 0, 0);
 
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
@@ -231,9 +151,6 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             /*auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
             MH_EnableHook((LPVOID)(GCADDR));*/
-
-            ConnectServer();
-            CreateThread(0, 0, ServerThread, 0, 0, 0);
         }
     }
 
