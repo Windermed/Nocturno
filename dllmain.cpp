@@ -93,6 +93,11 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 FortPlayerState->OnRep_CharacterParts();
                 Cores::PlayerPawn->OnCharacterPartsReinitialized();
 
+                auto PlayerStateOutpost = reinterpret_cast<SDK::AFortPlayerStateOutpost*>(Cores::PlayerController->PlayerState);
+                PlayerStateOutpost->bShowHeroHeadAccessories = true;
+                PlayerStateOutpost->OnRep_ShowHeroHeadAccessories();
+                PlayerStateOutpost->ServerSetCanEditOutpost(PlayerStateOutpost, true);
+
                 // sets the pickaxe for the player pawn
                 auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T05.WID_Harvest_Pickaxe_SR_T05");
                 PickaxeDef = pickaxeDef;
@@ -109,6 +114,16 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 bIsReady = false;
                 bIsInGame = true;
             }
+        }
+
+        if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
+        {
+            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
+            auto CurrentBuildClass = FortController->CurrentBuildableClass;
+            auto LastBuildPreviewLocation = FortController->LastBuildPreviewGridSnapLoc;
+            auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
+            auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
+            BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
         }
 
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
@@ -205,7 +220,7 @@ DWORD WINAPI MainThread(LPVOID)
                                              )";
     printf(idk);
     
-    printf("\nCreated by Jacobb626 and Windermed!\n");
+    printf("\nCreated by Jacobb626 and Windermed! SUS\n");
     printf("Go to the Map and select any mission to load in, have fun!\n");
 
     MH_Initialize();
