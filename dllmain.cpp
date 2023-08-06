@@ -117,6 +117,38 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             Inventory::ExecuteInventoryItem(guid);
         }
 
+        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
+        {
+            struct Params_
+            {
+                SDK::FGuid ItemGuid;
+                int Count;
+            };
+
+            auto Params = (Params_*)(params);
+            auto ItemInstances = FortInventory->Inventory.ItemInstances;
+            auto QuickbarSlots = QuickBars->PrimaryQuickBar.Slots;
+
+            for (int i = 0; i < ItemInstances.Num(); i++)
+            {
+                auto ItemInstance = ItemInstances.operator[](i);
+
+                if (Util::AreGuidsTheSame(Params->ItemGuid, ItemInstance->GetItemGuid()))
+                {
+                    Inventory::DropPickupAtLocation(ItemInstance->GetItemDefinitionBP(), Params->Count);
+                }
+            }
+
+            for (int i = 0; i < QuickbarSlots.Num(); i++) 
+            {
+                if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid)) 
+                {
+                    QuickBars->EmptySlot(SDK::EFortQuickBars::Primary, i);
+                    Inventory::UpdateInventory();
+                }
+            }
+        }
+
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
         {
             //Jumping
@@ -148,9 +180,13 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortCheatManager->GiveResources(999); // gives the player maximum mats
             FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
 
-            /*auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
+            auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
-            MH_EnableHook((LPVOID)(GCADDR));*/
+            MH_EnableHook((LPVOID)(GCADDR));
+        }
+
+        if (!function->GetName().find("Tick")) 
+        {
         }
     }
 
