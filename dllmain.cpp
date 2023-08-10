@@ -34,14 +34,6 @@ bool bIsReady = false;
 bool bHasSpawned = false;
 bool bIsInGame = false;
 
-DWORD WINAPI InventoryThread(LPVOID)
-{
-    Inventory::SetupQuickbars();
-    Inventory::SetupInventory();
-    Inventory::UpdateInventory();
-
-    return NULL;
-}
 
 PVOID(*ProcessEvent)(SDK::UObject*, SDK::UFunction*, PVOID) = nullptr;
 PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID params) 
@@ -50,7 +42,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
         if (function->GetName().find("StartButton") != std::string::npos)
         {
             // this is the map that it loads to
-            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_Suburban_a");
+            Cores::PlayerController->SwitchLevel(L"Zone_Onboarding_FarmsteadFort");
             bIsReady = true;
         }
 
@@ -76,7 +68,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 }
                 // allows for the game to possess the pawn and sets the player pawn's location and state
                 Cores::PlayerController->Possess(Cores::PlayerPawn);
-                Cores::PlayerController->CheatManager->BugItGo(1, 1, 10000, 0, 0, 0);
+                Cores::PlayerController->CheatManager->BugItGo(-3600, -300, -1522, 0, 275, 0);
                 Cores::PlayerController->CheatManager->God();
                 Cores::PlayerController->CheatManager->Slomo(1);
                 printf("Pawn!\n");
@@ -93,13 +85,8 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 FortPlayerState->OnRep_CharacterParts();
                 Cores::PlayerPawn->OnCharacterPartsReinitialized();
 
-                auto PlayerStateOutpost = reinterpret_cast<SDK::AFortPlayerStateOutpost*>(Cores::PlayerController->PlayerState);
-                PlayerStateOutpost->bShowHeroHeadAccessories = true;
-                PlayerStateOutpost->OnRep_ShowHeroHeadAccessories();
-                PlayerStateOutpost->ServerSetCanEditOutpost(PlayerStateOutpost, true);
-
                 // sets the pickaxe for the player pawn
-                auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T05.WID_Harvest_Pickaxe_SR_T05");
+                auto pickaxeDef = SDK::UObject::FindObject<SDK::UFortWeaponMeleeItemDefinition>("FortWeaponMeleeItemDefinition WID_Harvest_Pickaxe_SR_T06.WID_Harvest_Pickaxe_SR_T06");
                 PickaxeDef = pickaxeDef;
 
                 FortGameMode->StartMatch();
@@ -116,52 +103,57 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             }
         }
 
-        if (function->GetName().find("ServerCreateBuilding") != std::string::npos && bIsInGame)
-        {
-            auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
-            auto CurrentBuildClass = FortController->CurrentBuildableClass;
-            auto LastBuildPreviewLocation = FortController->LastBuildPreviewGridSnapLoc;
-            auto LastBuildPreviewRotation = FortController->LastBuildPreviewGridSnapRot;
-            auto BuildingActor = reinterpret_cast<SDK::ABuildingActor*>(Util::SpawnActor(CurrentBuildClass, LastBuildPreviewLocation, LastBuildPreviewRotation));
-            BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, FortController);
-        }
-
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
         {
             SDK::FGuid* guid = reinterpret_cast<SDK::FGuid*>(params);
             Inventory::ExecuteInventoryItem(guid);
         }
 
-        if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame) 
-        {
-            struct Params_
+        if (function->GetName().find("ServerRemoveInventoryItem") != std::string::npos && bIsInGame)
+            if (function->GetName().find("ServerAttemptInventoryDrop") != std::string::npos && bIsInGame)
             {
-                SDK::FGuid ItemGuid;
-                int Count;
+                struct Params_
+                {
+                    SDK::FGuid ItemGuid;
+                    int Count;
+                };
+                auto Params = (Params_*)(params);
+                auto ItemInstances = FortInventory->Inventory.ItemInstances;
+                auto QuickbarSlots = QuickBars->PrimaryQuickBar.Slots;
+                for (int i = 0; i < ItemInstances.Num(); i++)
+                {
+                    auto ItemInstance = ItemInstances.operator[](i);
+                    if (Util::AreGuidsTheSame(Params->ItemGuid, ItemInstance->GetItemGuid()))
+                    {
+                        Inventory::DropPickupAtLocation(ItemInstance->GetItemDefinitionBP(), Params->Count);
+                    }
+                }
+
+                for (int i = 0; i < QuickbarSlots.Num(); i++)
+                    for (int i = 0; i < QuickbarSlots.Num(); i++)
+                    {
+                        if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid))
+                            if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid))
+                            {
+                                QuickBars->EmptySlot(SDK::EFortQuickBars::Primary, i);
+                                Inventory::UpdateInventory();
+                            }
+                    }
+            }
+
+        if (function->GetName().find("ServerHandlePickup") != std::string::npos && bIsInGame)
+        {
+            struct ServerHandlePickupParams
+            {
+                SDK::UFortItemDefinition* Pickup;
+                float InFlyTime;
+                SDK::FVector InStartDirection;
+                bool bPlayPickupSound;
             };
 
-            auto Params = (Params_*)(params);
-            auto ItemInstances = FortInventory->Inventory.ItemInstances;
-            auto QuickbarSlots = QuickBars->PrimaryQuickBar.Slots;
+            auto Params = (ServerHandlePickupParams*)(params);
 
-            for (int i = 0; i < ItemInstances.Num(); i++)
-            {
-                auto ItemInstance = ItemInstances.operator[](i);
-
-                if (Util::AreGuidsTheSame(Params->ItemGuid, ItemInstance->GetItemGuid()))
-                {
-                    Inventory::DropPickupAtLocation(ItemInstance->GetItemDefinitionBP(), Params->Count);
-                }
-            }
-
-            for (int i = 0; i < QuickbarSlots.Num(); i++) 
-            {
-                if (Util::AreGuidsTheSame(QuickbarSlots[i].Items[0], Params->ItemGuid)) 
-                {
-                    QuickBars->EmptySlot(SDK::EFortQuickBars::Primary, i);
-                    Inventory::UpdateInventory();
-                }
-            }
+            //Inventory::AddItemToInventory(Params->Pickup, 125, 1);
         }
 
         if (function->GetName().find("Tick") != std::string::npos && bIsInGame) 
@@ -183,7 +175,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
 
         if (function->GetName().find("ServerLoadingScreenDropped") != std::string::npos && bIsInGame)
         {
-            CreateThread(0, 0, InventoryThread, 0, 0, 0);
+            Inventory::SetupQuickbars();
+            Inventory::SetupInventory();
+            Inventory::UpdateInventory();
 
             auto FortController = reinterpret_cast<SDK::AFortPlayerController*>(Cores::PlayerController);
             auto FortCheatManager = reinterpret_cast<SDK::UFortCheatManager*>(Cores::PlayerController->CheatManager);
@@ -195,13 +189,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortCheatManager->GiveResources(999); // gives the player maximum mats
             FortCheatManager->GiveUsefulThings(999); // gives the player maximum items
 
-            auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
+            /*auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
-            MH_EnableHook((LPVOID)(GCADDR));
-        }
-
-        if (!function->GetName().find("Tick")) 
-        {
+            MH_EnableHook((LPVOID)(GCADDR));*/
         }
     }
 
@@ -220,7 +210,7 @@ DWORD WINAPI MainThread(LPVOID)
                                              )";
     printf(idk);
     
-    printf("\nCreated by Jacobb626 and Windermed! SUS\n");
+    printf("\nCreated by Jacobb626 and Windermed!\n");
     printf("Go to the Map and select any mission to load in, have fun!\n");
 
     MH_Initialize();
