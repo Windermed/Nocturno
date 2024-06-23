@@ -15,6 +15,19 @@ Credit:
 
 Additional credit for source code is included in the file (if applicable!)
 
+## HOW TO RUN
+
+1. Clone the Repository
+2. Open in Visual Studio (2022 recommended)
+3. Set the project to Release (if set to Debug)
+4. Go to Nocturno's Project properties, set the output location to where you want the DLL to compile to
+5. Build the Project Solution. Find the Compiled DLL in the location you set in step 4.
+6. Open Fortnite using any private server you have.
+7. Once in the STW Frontend, inject the NocturnoV1 DLL.
+8. Go to the map and press start!
+9. If done correcty, you should be able to load in-game!
+
+
 
 
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
