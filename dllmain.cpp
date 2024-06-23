@@ -17,6 +17,7 @@ bool bIsInGame = false;
 bool hasInventorySetup = false;
 SDK::FString MapName = L"Zone_Temperate_Suburban?game=zone"; //change the variable here to any map name you want to load onto.
 // note: leave the "?game=zone" part unless you want to replace "=zone" with "=outpost"
+// use Zone_Onboarding_Suburban_a or Zone_Onboarding_Forest_a until i find a fix for coordinates.
 
 
 
@@ -90,7 +91,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 Cores::PlayerController->CheatManager->Slomo(0);
                // Cores::PlayerController->CheatManager->Summon(L"PlayerPawn_Generic_C");
                 PlayerPawn = SDK::APlayerPawn_Generic_C::StaticClass();
-                Cores::PlayerPawn = Util::SpawnActor<SDK::APlayerPawn_Generic_C>(PlayerPawn, { 0, 10000, 0 }, {});
+                Cores::PlayerPawn = Util::SpawnActor<SDK::APlayerPawn_Generic_C>(PlayerPawn, { 500, 40000, 500 }, {}); //need to fix the coordinates.
                 //Cores::PlayerPawn = reinterpret_cast<SDK::APlayerPawn_Generic_C*>(Util::FindActor(SDK::APlayerPawn_Generic_C::StaticClass()));
                 if (!Cores::PlayerPawn)
                 {
@@ -106,7 +107,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 //Cores::PlayerController->CheatManager->BugItGo(-3600, -300, -1522, 0, 275, 0);
                 //Cores::PlayerController->MyFortPawn
                 Cores::PlayerController->CheatManager->God();
-                Cores::PlayerController->CheatManager->Slomo(1);
+                
 
                 LoadObject<SDK::UBlueprintGeneratedClass>(L"/Game/Abilities/Player/Constructor/Perks/ContainmentUnit/GE_Constructor_ContainmentUnit_Applied.GE_Constructor_ContainmentUnit_Applied_C");
                 LoadObject<SDK::UBlueprintGeneratedClass>(L"/Game/Abilities/Player/Constructor/Perks/Default/GE_Constructor_IsConstructor.GE_Constructor_IsConstructor_C");
@@ -156,9 +157,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 printf("OnRepping changes!!\n");
                 FortPlayerController->OnRep_bHasServerFinishedLoading();
                 // sets the pickaxe for the player pawn
-             
+                Cores::PlayerController->CheatManager->Slomo(0.3);
+                //Cores::PlayerController->CheatManager->BugItGo(500, 12000, 0, 0, 275, 0);
                
-
                 bHasSpawned = true;
                 bIsReady = false;
                 bIsInGame = true;
@@ -183,6 +184,24 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortGameMode->bWorldIsReady = true;
             printf("Successfully set world to ready!\n");
             //DidMatchStart = true;
+        }
+
+        if (function->GetName().find("ServerReadyToStartMatch") != std::string::npos && bIsInGame)
+        {
+            Util::InitSdk();
+            Util::InitCores();
+            //Util::InitPatches();
+
+            static bool commandWasUsed = false;
+
+            if (!commandWasUsed) 
+            {
+                printf("ServerReadyToStartMatch!\n");
+                Cores::PlayerController->CheatManager->Slomo(1);
+                commandWasUsed = true;
+            }
+            
+            
         }
 
         if (function->GetName().find("ServerExecuteInventoryItem") != std::string::npos && bIsInGame) 
@@ -278,11 +297,12 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
            // Util::InitPatches();
             printf("ServerLoadingScreenDropped!\n");
            // printf("Beginning to grant abilities..\n");
-           // not gonna bother fixing this. would rather work on NocturnoV3 lol.
+           // not gonna bother fixing this shit. would rather work on NocturnoV3 lol.
            // the crash is likely due to the SDK used. replace it with a new one and it might work? 
            // - Windermed 6/23/2024
            // Util::GrantAbilities();
-
+           // Cores::PlayerController->CheatManager->Slomo(1);
+            Cores::PlayerController->CheatManager->Slomo(1);
             printf("Loading Every Husk to memory..\n");
             LoadObject<SDK::UBlueprintGeneratedClass>(L"/Game/Characters/Enemies/Shielder/Blueprints/ShielderPawn.ShielderPawn_C");
             LoadObject<SDK::UBlueprintGeneratedClass>(L"/Game/Characters/Enemies/Smasher/Blueprints/SmasherPawn.SmasherPawn_C");
@@ -312,9 +332,9 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
             FortCheatManager->EvolveHero(); //Evolves the hero i hope - stripped
              printf("Started mission!\n");
 
-            /*auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
+            auto GCADDR = Util::FindPattern("\x48\x8B\xC4\x48\x89\x58\x08\x88\x50\x10", "xxxxxxxxxx");
             MH_CreateHook((LPVOID)(GCADDR), CollectGarbageInternalHook, (LPVOID*)(&CollectGarbageInternal));
-            MH_EnableHook((LPVOID)(GCADDR));*/
+            MH_EnableHook((LPVOID)(GCADDR));
         }
     }
 
