@@ -15,7 +15,7 @@ bool bIsReady = false;
 bool bHasSpawned = false;
 bool bIsInGame = false;
 bool hasInventorySetup = false;
-SDK::FString MapName = L"Zone_Temperate_Suburban?game=zone"; //change the variable here to any map name you want to load onto.
+SDK::FString MapName = L"Zone_Onboarding_Forest_a?game=zone"; //change the variable here to any map name you want to load onto.
 // note: leave the "?game=zone" part unless you want to replace "=zone" with "=outpost"
 // use Zone_Onboarding_Suburban_a or Zone_Onboarding_Forest_a until i find a fix for coordinates.
 
@@ -90,8 +90,8 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 SDK::UClass* PlayerPawn = nullptr;
                 Cores::PlayerController->CheatManager->Slomo(0);
                // Cores::PlayerController->CheatManager->Summon(L"PlayerPawn_Generic_C");
-                PlayerPawn = SDK::APlayerPawn_Generic_C::StaticClass();
-                Cores::PlayerPawn = Util::SpawnActor<SDK::APlayerPawn_Generic_C>(PlayerPawn, { 500, 40000, 500 }, {}); //need to fix the coordinates.
+                PlayerPawn = SDK::APlayerPawn_Generic_C::StaticClass(); //500, 40000, 500
+                Cores::PlayerPawn = Util::SpawnActor<SDK::APlayerPawn_Generic_C>(PlayerPawn, { 100, 3000, 100 }, {}); //need to fix the coordinates.
                 //Cores::PlayerPawn = reinterpret_cast<SDK::APlayerPawn_Generic_C*>(Util::FindActor(SDK::APlayerPawn_Generic_C::StaticClass()));
                 if (!Cores::PlayerPawn)
                 {
