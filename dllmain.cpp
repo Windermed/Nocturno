@@ -91,7 +91,7 @@ PVOID ProcessEventHook(SDK::UObject* object, SDK::UFunction* function, PVOID par
                 Cores::PlayerController->CheatManager->Slomo(0);
                // Cores::PlayerController->CheatManager->Summon(L"PlayerPawn_Generic_C");
                 PlayerPawn = SDK::APlayerPawn_Generic_C::StaticClass(); //500, 40000, 500
-                Cores::PlayerPawn = Util::SpawnActor<SDK::APlayerPawn_Generic_C>(PlayerPawn, { 100, 3000, 100 }, {}); //need to fix the coordinates.
+                Cores::PlayerPawn = Util::SpawnActor<SDK::APlayerPawn_Generic_C>(PlayerPawn, { 200, 3000, 100 }, {}); //need to fix the coordinates.
                 //Cores::PlayerPawn = reinterpret_cast<SDK::APlayerPawn_Generic_C*>(Util::FindActor(SDK::APlayerPawn_Generic_C::StaticClass()));
                 if (!Cores::PlayerPawn)
                 {
