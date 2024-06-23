@@ -27,7 +27,9 @@ Additional credit for source code is included in the file (if applicable!)
 8. Go to the map and press start!
 9. If done correcty, you should be able to load in-game!
 
-
+If you would like to contribute to this branch by making any new changes then you
+are welcome to do so!! Just create a pull request with your changes and i'll see about
+merging those changes with our V1 branch. (you will be credited of course!)
 
 
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
