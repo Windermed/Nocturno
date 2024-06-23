@@ -66,6 +66,7 @@ public:
 	}
 
 	bool IsA(UClass* cmp) const;
+	static class UObject* GetDefaultObj();
 
 	static UClass* StaticClass()
 	{
@@ -203,7 +204,11 @@ public:
 class UClass : public UStruct
 {
 public:
-	unsigned char                                      UnknownData00[0x1C8];                                     // 0x0088(0x01C8) MISSED OFFSET
+	uint8                                         Pad_25[0x30];                                      // 0x0088(0x0030)(Fixing Size After Last Property [ Dumper-7 ])
+	enum class EClassCastFlags                    CastFlags;                                         // 0x00B8(0x0008)(NOT AUTO-GENERATED PROPERTY)
+	uint8                                         Pad_26[0x40];                                      // 0x00C0(0x0040)(Fixing Size After Last Property [ Dumper-7 ])
+	class UObject* DefaultObject;                                     // 0x0100(0x0008)(NOT AUTO-GENERATED PROPERTY)
+	uint8                                         Pad_27[0x148];                                     // 0x0108(0x0148)(Fixing Struct Size After Last Property [ Dumper-7 ])
 
 	template<typename T>
 	inline T* CreateDefaultObject()

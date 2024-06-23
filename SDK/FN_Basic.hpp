@@ -8,6 +8,8 @@
 
 namespace SDK
 {
+
+void InitGObjects();
 template<typename Fn>
 inline Fn GetVFunction(const void *instance, std::size_t index)
 {

@@ -10,9 +10,17 @@
 #include <stdio.h>
 #include <winscard.h>
 
+
+
+using namespace SDK;
+
+//globals before globals existed lol
 namespace Cores {
+    SDK::UFortEngine* FortEngine;
+    SDK::UEngine* Engine;
     SDK::APlayerPawn_Generic_C* PlayerPawn;
     SDK::UGameplayStatics* GameplayStatics;
+    SDK::UGameplayStatics* GPS;
     SDK::UWorld** World;
     SDK::ULevel* Level;
     SDK::TArray<SDK::AActor*>* Actors;
@@ -25,9 +33,18 @@ namespace Cores {
 
 static SDK::UObject* (*StaticLoadObject)(SDK::UClass* ObjectClass, SDK::UObject* InOuter, const TCHAR* InName, const TCHAR* Filename, uint32_t LoadFlags, SDK::UPackageMap* Sandbox, bool bAllowObjectReconciliation);
 template<class T>
-static T* LoadObject(SDK::UObject* Outer, const TCHAR* Name, const TCHAR* Filename = nullptr, uint32_t LoadFlags = 0, SDK::UPackageMap* Sandbox = nullptr)
+static T* LoadObject(const TCHAR* InPath)
 {
-    return (T*)StaticLoadObject(T::StaticClass(), Outer, Name, Filename, LoadFlags, Sandbox, true);
+    return (T*)StaticLoadObject(T::StaticClass(), nullptr, InPath, nullptr, 0, nullptr, false);
+}
+
+template <typename T>
+static T* StaticFindObject(std::string ObjectName, SDK::UClass* ObjectClass = SDK::UObject::StaticClass())
+{
+    auto OrigInName = std::wstring(ObjectName.begin(), ObjectName.end()).c_str();
+
+    auto StaticFindObject = (T * (*)(SDK::UClass*, SDK::UObject * Package, const wchar_t* OrigInName, bool ExactClass))((uintptr_t)GetModuleHandleA(0) + 0x142D2E0);
+    return StaticFindObject(ObjectClass, nullptr, OrigInName, false);
 }
 
 class Util
@@ -36,9 +53,11 @@ public:
     static void InitGameplaystatics()
     {
         Cores::GameplayStatics = reinterpret_cast<SDK::UGameplayStatics*>(SDK::UGameplayStatics::StaticClass());
+        //Cores::GPS = reinterpret_cast<SDK::UGameplayStatics*>(SDK::UGameplayStatics::StaticClass());
     }
 
-    static SDK::AActor* SpawnActor(SDK::UClass* ActorClass, SDK::FVector Location, SDK::FRotator Rotation)
+    template<typename ReturnType = SDK::AActor>
+    static ReturnType* SpawnActor(SDK::UClass* ActorClass, SDK::FVector Location, SDK::FRotator Rotation)
     {
         SDK::FQuat Quat;
         SDK::FTransform Transform;
@@ -53,7 +72,85 @@ public:
 
         auto Actor = Cores::GameplayStatics->STATIC_BeginSpawningActorFromClass((*Cores::World), ActorClass, Transform, false, nullptr);
         Cores::GameplayStatics->STATIC_FinishSpawningActor(Actor, Transform);
-        return Actor;
+        return (ReturnType*)(Actor);
+    }
+
+    static SDK::UFortEngine* GetFortEngine()
+    {
+        printf("Searching FortEngine..\n");
+        //FortEngine Transient.FortEngine_0
+        //FortEngine FortniteGame.Default__FortEngine
+        auto FortEngine = SDK::UObject::FindObject<SDK::UFortEngine>("FortEngine Transient.FortEngine_0");//backported from V2.
+        if (FortEngine) 
+        {
+            printf("FortEngine was found!\n");
+            return FortEngine;
+        }
+        else 
+        {
+            printf("No FortEngine found!\n");
+            return nullptr;
+        }
+            
+        
+            
+        //std::cout << "No FortEngine\n";
+    }
+
+    static FGameplayAbilitySpec GenerateAbilitySpec(UClass* Ability)
+    {
+        FGameplayAbilitySpecHandle SpecHandle{ rand() };
+
+        FGameplayAbilitySpec AbilitySpec{ -1, -1, -1, SpecHandle, (UGameplayAbility*)Ability->DefaultObject, 1, -1, nullptr, 0, false, false, false };
+
+        return AbilitySpec;
+    }
+
+    //credit?
+    static void GrantAbility(SDK::UClass* GameplayAbilityClass)
+    {
+        printf("Start of GrantAbility!");
+        auto AbilitySystemComponent = Cores::PlayerPawn->AbilitySystemComponent;
+        static auto DefaultGameplayEffect = SDK::UObject::FindObject<SDK::UGameplayEffect>("GE_Constructor_ContainmentUnit_Applied_C GE_Constructor_ContainmentUnit_Applied.Default__GE_Constructor_ContainmentUnit_Applied_C");
+
+        if (!DefaultGameplayEffect)
+            return;
+
+        SDK::TArray<SDK::FGameplayAbilitySpecDef> GrantedAbilities = DefaultGameplayEffect->GrantedAbilities;
+
+
+        GrantedAbilities[0].Ability = GameplayAbilityClass;
+
+        DefaultGameplayEffect->DurationPolicy = SDK::EGameplayEffectDurationType::Infinite;
+
+        static auto GameplayEffectClass = SDK::UObject::FindClass("BlueprintGeneratedClass GE_Constructor_ContainmentUnit_Applied.GE_Constructor_ContainmentUnit_Applied_C");
+        if (!GameplayEffectClass)
+            return;
+
+        auto handle = SDK::FGameplayEffectContextHandle();
+
+        AbilitySystemComponent->BP_ApplyGameplayEffectToTarget(GameplayEffectClass, AbilitySystemComponent, 1, handle);
+
+    }
+
+    //crash on GameplayAbilities.Num()
+    //cba to fix. sorry lmao
+   static void GrantAbilities()
+    {
+        printf("Granting Abilities.\n");
+        static auto AbilitySet = StaticFindObject<SDK::UFortAbilitySet>("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer");
+        ///static auto EmoteAbility = Actors::StaticFindObject<SDK::UClass>("/Game/Abilities/Player/Ninja/Perks/MantisLeap/GA_Ninja_MantisLeap.Ga_Ninja_MantisLeap");
+        //("/Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic");
+
+        for (int i = 0; i < AbilitySet->GameplayAbilities.Num(); i++)
+        {
+            auto Ability = AbilitySet->GameplayAbilities[i];
+
+            GrantAbility(Ability);
+
+        }
+
+
     }
 
     static bool AreGuidsTheSame(SDK::FGuid guidA, SDK::FGuid guidB)
@@ -72,6 +169,7 @@ public:
         freopen_s(&pFile, "CONOUT$", "w", stdout);
     }
 
+    //credit to Polaris
     static VOID InitSdk()
     {
         auto pUWorldAddress = Util::FindPattern("\x48\x8B\x1D\x00\x00\x00\x00\x00\x00\x00\x10\x4C\x8D\x4D\x00\x4C", "xxx???????xxxx?x");
@@ -88,14 +186,13 @@ public:
         SDK::FName::GNames = *reinterpret_cast<SDK::TNameEntryArray**>(pGNameAddress + 7 + pGNameOffset);
 
         auto pStaticConstructObject_InternalOffset = FindPattern("\xE8\x00\x00\x00\x00\x89\x78\x38", "x????xxx");
-        if (!pStaticConstructObject_InternalOffset)
-            printf("Finding pattern for StaticConstructObject_Internal has failed. Please relaunch Fortnite and try again!");
         auto pStaticConstructObject_InternalAddress = pStaticConstructObject_InternalOffset + 5 + *reinterpret_cast<int32_t*>(pStaticConstructObject_InternalOffset + 1);
 
         Cores::StaticConstructObject_Internal = reinterpret_cast<decltype(Cores::StaticConstructObject_Internal)>(pStaticConstructObject_InternalAddress);
         StaticLoadObject = reinterpret_cast<decltype(StaticLoadObject)>(BaseAddress() + 0x142E560);
     }
 
+    //credit to Polaris
     static VOID InitCores()
     {
         uintptr_t pBaseAddress = Util::BaseAddress();
@@ -110,7 +207,7 @@ public:
             printf("UWorld failed!\n");
             exit(0);
         }
-
+        //Cores::FortEngine = GetFortEngine();
         Cores::Level = (*Cores::World)->PersistentLevel;
         Cores::GameInstance = (*Cores::World)->OwningGameInstance;
         Cores::LocalPlayers = Cores::GameInstance->LocalPlayers;
@@ -119,6 +216,7 @@ public:
         Cores::PlayerController = Cores::LocalPlayer->PlayerController;
     }
 
+    //credit to Polaris
     static VOID InitPatches()
     {
         auto pAbilityPatchAddress = Util::FindPattern
@@ -138,6 +236,8 @@ public:
             VirtualProtect(pAbilityPatchAddress, 16, dwProtection, &dwTemp);
         }
     }
+
+
 
     static uintptr_t BaseAddress()
     {

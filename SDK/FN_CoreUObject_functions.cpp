@@ -63,6 +63,16 @@ bool UObject::IsA(UClass* cmp) const
 	return false;
 }
 
+class UObject* UObject::GetDefaultObj()
+{
+	static class UObject* Default = nullptr;
+
+	if (!Default)
+		Default = static_cast<UObject*>(UObject::StaticClass()->DefaultObject);
+
+	return Default;
+}
+
 // Function CoreUObject.Object.ExecuteUbergraph
 // (Event, Public, BlueprintEvent)
 // Parameters:

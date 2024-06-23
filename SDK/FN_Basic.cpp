@@ -6,10 +6,16 @@
 
 #include "../SDK.hpp"
 
+
 namespace SDK
 {
 TNameEntryArray* FName::GNames = nullptr;
 FUObjectArray* UObject::GObjects = nullptr;
+
+void InitGObjects()
+{
+	//UObject::GObjects = reinterpret_cast<TUObjectArray*>(uintptr_t(GetModuleHandle(0)) + Offsets::GObjects);
+}
 //---------------------------------------------------------------------------
 bool FWeakObjectPtr::IsValid() const
 {
@@ -45,6 +51,7 @@ UObject* FWeakObjectPtr::Get() const
 	}
 	return nullptr;
 }
+
 //---------------------------------------------------------------------------
 }
 

@@ -23,6 +23,9 @@
     <ClCompile Include="SDK\FN_UMG_functions.cpp">
       <Filter>sdk</Filter>
     </ClCompile>
+    <ClCompile Include="SDK\FN_GameplayAbilities_functions.cpp">
+      <Filter>sdk</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.h" />
@@ -34,6 +37,13 @@
     </ClInclude>
     <ClInclude Include="HuskAI.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Building.h" />
+    <ClInclude Include="SDK\FN_Basic.hpp">
+      <Filter>sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\FN_CoreUObject_classes.hpp">
+      <Filter>sdk</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

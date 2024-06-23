@@ -5,6 +5,39 @@
 #include <set>
 #include <locale>
 #include <string>
+#include <Windows.h>
+#include <psapi.h>
+#include <vector>
+#include <inttypes.h>
+#include <filesystem>
+#include <iostream>
+#include <type_traits>
+
+typedef __int8 int8;
+typedef __int16 int16;
+typedef __int32 int32;
+typedef __int64 int64;
+
+typedef unsigned __int8 uint8;
+typedef unsigned __int16 uint16;
+typedef unsigned __int32 uint32;
+typedef unsigned __int64 uint64;
+
+
+
+namespace Offsets
+{
+	inline int32 GObjects = 0x0678E010;
+	inline int32 AppendString = 0x01337530;
+	inline int32 GNames = 0x00000000;
+	inline int32 GEngine = 0x06877800;
+	inline int32 GWorld = 0x068799f0;
+	inline int32 ProcessEvent = 0x01427390;
+	inline int32 Realloc = 0x0128C650;
+	inline int32 CollectGarbage = 0x013cc730;
+	inline int32 ProcessEventIdx = 0x0000003E;
+	inline int32 LoadObject = 0x0142EE30;
+}
 
 #include "SDK/FN_Basic.hpp"
 
