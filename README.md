@@ -22,7 +22,7 @@ Additional credit for source code is included in the code (if applicable!)
 3. Set the project to Release (if set to Debug)
 4. Go to Nocturno's Project properties, set the output location to where you want the DLL to compile to
 5. Build the Project Solution. Find the Compiled DLL in the location you set in step 4.
-6. Open Fortnite using any private server you have.
+6. Open Fortnite (1.8) using any private server you have.
 7. Once in the STW Frontend, inject the NocturnoV1 DLL.
 8. Go to the map and press start!
 9. If done correcty, you should be able to load in-game!
